@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employer - Post Job</title>
+
+<style>
+body{
+  font-family: Arial;
+  background:#f4f6f8;
+  padding:20px;
+}
+
+.container{
+  max-width:600px;
+  margin:auto;
+}
+
+.box{
+  background:#fff;
+  padding:20px;
+  border-radius:8px;
+}
+
+input, textarea{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+}
+
+button{
+  margin-top:15px;
+  padding:10px;
+  width:100%;
+  background:#27ae60;
+  color:#fff;
+  border:none;
+  border-radius:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Post a Job</h2>
+
+<div class="box">
+  <input id="jobTitle" placeholder="Job Title">
+  <textarea id="jobDesc" placeholder="Job Description"></textarea>
+  <input id="jobLocation" placeholder="Location">
+  <button onclick="postJob()">Post Job</button>
+</div>
+
+</div>
+
+<script>
+function postJob(){
+  let title = jobTitle.value;
+  let desc = jobDesc.value;
+  let loc = jobLocation.value;
+
+  if(!title || !desc || !loc){
+    alert("Complete all fields!");
+    return;
+  }
+
+  let jobs = JSON.parse(localStorage.getItem("jobs")) || [];
+
+  jobs.push({title, desc, loc});
+
+  localStorage.setItem("jobs", JSON.stringify(jobs));
+
+  alert("Job Posted!");
+
+  jobTitle.value="";
+  jobDesc.value="";
+  jobLocation.value="";
+}
+</script>
+
+</body>
+</html>
