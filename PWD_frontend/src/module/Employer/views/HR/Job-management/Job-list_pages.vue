@@ -70,14 +70,16 @@
                 </div>
 
                 <div class="actions">
-                  <button class="view" @click.stop="openView(job)">
+                  <button class="view" type="button" @click.stop.prevent="openView(job)">
                     View
                   </button>
 
                   <button
                     v-if="job.status === 'open'"
                     class="close"
-                    @click.stop="closeJob(job.id)"
+                    type="button"
+                    :disabled="busyJobId === job.id"
+                    @click.stop.prevent="closeJob(job)"
                   >
                     Close
                   </button>
@@ -85,14 +87,18 @@
                   <button
                     v-else
                     class="reopen"
-                    @click.stop="reopenJob(job.id)"
+                    type="button"
+                    :disabled="busyJobId === job.id"
+                    @click.stop.prevent="reopenJob(job)"
                   >
                     Reopen
                   </button>
 
                   <button
                     class="delete"
-                    @click.stop="deleteJob(job.id)"
+                    type="button"
+                    :disabled="busyJobId === job.id"
+                    @click.stop.prevent="deleteJob(job)"
                   >
                     Delete
                   </button>
@@ -278,8 +284,6 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  query,
-  orderBy,
   getDoc,
   writeBatch,
   serverTimestamp
@@ -291,8 +295,10 @@ export default {
   data() {
     return {
       jobs: [],
+      jobsUnsubscribe: null,
       search: "",
       backfilling: false,
+      busyJobId: null,
       showModal: false,
       editJobData: {},
       showViewModal: false,
@@ -307,15 +313,13 @@ export default {
   computed: {
     filteredJobs() {
       return this.jobs.filter(job =>
-        job.title.toLowerCase().includes(this.search.toLowerCase())
+        String(job?.title || "").toLowerCase().includes(this.search.toLowerCase())
       )
     }
   },
 
   mounted() {
-    const q = query(collection(db, "jobs"), orderBy("createdAt", "desc"))
-
-    onSnapshot(q, snapshot => {
+    this.jobsUnsubscribe = onSnapshot(collection(db, "jobs"), snapshot => {
       this.jobs = snapshot.docs.map(d => {
         const raw = d.data()
         const images = Array.isArray(raw.images) ? raw.images.filter(Boolean) : []
@@ -336,11 +340,38 @@ export default {
             images[1] ||
             ""
         }
-      })
+      }).sort((a, b) => this.getCreatedAtMillis(b.createdAt) - this.getCreatedAtMillis(a.createdAt))
+
+      if (this.showViewModal && this.viewJobData?.id) {
+        const fresh = this.jobs.find((job) => job.id === this.viewJobData.id)
+        this.viewJobData = fresh ? { ...fresh } : {}
+      }
+
+      if (this.showModal && this.editJobData?.id) {
+        const fresh = this.jobs.find((job) => job.id === this.editJobData.id)
+        if (fresh) {
+          this.editJobData = { ...fresh }
+        }
+      }
     })
   },
 
+  beforeUnmount() {
+    if (typeof this.jobsUnsubscribe === "function") {
+      this.jobsUnsubscribe()
+      this.jobsUnsubscribe = null
+    }
+  },
+
   methods: {
+    getCreatedAtMillis(ts) {
+      if (!ts) return 0
+      if (typeof ts?.toMillis === "function") return ts.toMillis()
+      if (typeof ts?.seconds === "number") return ts.seconds * 1000
+      if (ts instanceof Date) return ts.getTime()
+      return 0
+    },
+
     async resolveActorMeta() {
       const user = auth.currentUser
       if (!user?.uid) return null
@@ -429,6 +460,10 @@ export default {
     },
 
     openView(job) {
+      if (!job?.id) {
+        toast.error("Unable to open job details.")
+        return
+      }
       this.viewJobData = { ...job }
       this.showViewModal = true
     },
@@ -535,17 +570,68 @@ export default {
       }
     },
 
-    async closeJob(id) {
-      await updateDoc(doc(db, "jobs", id), { status: "closed" })
+    async closeJob(job) {
+      const id = job?.id
+      if (!id) {
+        toast.error("Invalid job record.")
+        return
+      }
+
+      this.busyJobId = id
+      try {
+        await updateDoc(doc(db, "jobs", id), {
+          status: "closed",
+          updatedAt: serverTimestamp()
+        })
+        toast.success("Job closed.")
+      } catch (err) {
+        console.error(err)
+        toast.error(err?.message || "Failed to close job.")
+      } finally {
+        this.busyJobId = null
+      }
     },
 
-    async reopenJob(id) {
-      await updateDoc(doc(db, "jobs", id), { status: "open" })
+    async reopenJob(job) {
+      const id = job?.id
+      if (!id) {
+        toast.error("Invalid job record.")
+        return
+      }
+
+      this.busyJobId = id
+      try {
+        await updateDoc(doc(db, "jobs", id), {
+          status: "open",
+          updatedAt: serverTimestamp()
+        })
+        toast.success("Job reopened.")
+      } catch (err) {
+        console.error(err)
+        toast.error(err?.message || "Failed to reopen job.")
+      } finally {
+        this.busyJobId = null
+      }
     },
 
-    async deleteJob(id) {
-      if (confirm("Delete this job?")) {
+    async deleteJob(job) {
+      const id = job?.id
+      if (!id) {
+        toast.error("Invalid job record.")
+        return
+      }
+
+      if (!window.confirm("Delete this job?")) return
+
+      this.busyJobId = id
+      try {
         await deleteDoc(doc(db, "jobs", id))
+        toast.success("Job deleted.")
+      } catch (err) {
+        console.error(err)
+        toast.error(err?.message || "Failed to delete job.")
+      } finally {
+        this.busyJobId = null
       }
     }
 
@@ -704,6 +790,7 @@ export default {
   width:100%;
   height:100%;
   border:0;
+  pointer-events:none;
 }
 
 .location-label{
@@ -812,6 +899,13 @@ export default {
 .actions button:active{
   transform:translateY(0);
   box-shadow:0 6px 12px rgba(15, 23, 42, 0.18);
+}
+
+.actions button:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
 }
 
 .view{ background:linear-gradient(135deg, #0ea5e9, #0284c7); }

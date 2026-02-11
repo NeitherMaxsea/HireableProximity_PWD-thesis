@@ -1,36 +1,27 @@
 <template>
   <div class="app">
-
-    <!-- MAIN AREA -->
     <div class="main-wrapper">
-      <!-- MAIN -->
       <main>
         <section class="content">
-
-          <!-- HEADER -->
           <div class="page-header">
             <div>
               <h2>Employee Management</h2>
               <p class="subtitle">Manage all employee information here.</p>
             </div>
-
-            
           </div>
 
-          <!-- CONTROLS -->
           <div class="controls">
             <input
+              v-model="search"
               type="text"
               class="search"
               placeholder="Search employee..."
             >
+          </div>
 
-            <!-- <div class="right-controls"> <button class="btn outline">Filter Gender</button> <button class="btn outline">View</button> </div> -->
-          </div> 
+          <p v-if="loadError" class="error">{{ loadError }}</p>
 
-          <!-- TABLE CARD -->
           <div class="card">
-
             <table>
               <thead>
                 <tr>
@@ -45,117 +36,276 @@
               </thead>
 
               <tbody>
+                <tr v-if="loading">
+                  <td colspan="7" class="center">Loading records...</td>
+                </tr>
 
-                <!-- ORIGINAL DATA KEPT -->
-                <tr>
+                <tr v-else-if="filteredEmployees.length === 0">
+                  <td colspan="7" class="center">No employee records found.</td>
+                </tr>
+
+                <tr v-for="employee in filteredEmployees" :key="employee.id">
                   <td>
-                    <strong>Juan Dela Cruz</strong><br>
-                    <small>License No: ABC123</small>
+                    <strong>{{ employee.name }}</strong><br>
+                    <small>{{ employee.licenseLabel }}</small>
                   </td>
 
                   <td>
-                    +639123456789<br>
-                    <small>juan@email.com</small>
+                    {{ employee.contact }}<br>
+                    <small>{{ employee.email }}</small>
                   </td>
 
                   <td>
-                    <span class="badge active">Active</span><br>
-                    <small>April 20, 2025</small>
+                    <span class="badge" :class="statusClass(employee.status)">
+                      {{ employee.statusLabel }}
+                    </span><br>
+                    <small>{{ employee.applicationDateLabel }}</small>
                   </td>
 
-                  <td>Male</td>
-
-                  <td>Single</td>
+                  <td>{{ employee.gender }}</td>
+                  <td>{{ employee.civilStatus }}</td>
 
                   <td>
-                    Web Developer<br>
-                    <small>IT Department</small>
+                    {{ employee.position }}<br>
+                    <small>{{ employee.department }}</small>
                   </td>
 
                   <td class="center">
-                    <button class="icon-btn">⋮</button>
+                    <button class="icon-btn" type="button">...</button>
                   </td>
                 </tr>
-
-                <tr>
-                  <td>
-                    <strong>Maria Santos</strong><br>
-                    <small>License No: XYZ456</small>
-                  </td>
-
-                  <td>
-                    +639987654321<br>
-                    <small>maria@email.com</small>
-                  </td>
-
-                  <td>
-                    <span class="badge leave">On Leave</span><br>
-                    <small>April 18, 2025</small>
-                  </td>
-
-                  <td>Female</td>
-
-                  <td>Married</td>
-
-                  <td>
-                    Data Encoder<br>
-                    <small>Operations</small>
-                  </td>
-
-                  <td class="center">
-                    <button class="icon-btn">⋮</button>
-                  </td>
-                </tr>
-
               </tbody>
             </table>
 
-            <!-- FOOTER -->
             <div class="table-footer">
-              <p>Showing 1 to 2 of 2 results</p>
+              <p>Showing {{ filteredEmployees.length }} result(s)</p>
 
               <div class="pagination">
                 <span>Items per page</span>
-                <select>
+                <select disabled>
                   <option>5</option>
                   <option>10</option>
                   <option>20</option>
                 </select>
 
-                <button>«</button>
-                <button>‹</button>
-                <button>›</button>
-                <button>»</button>
+                <button type="button" disabled>&lt;&lt;</button>
+                <button type="button" disabled>&lt;</button>
+                <button type="button" disabled>&gt;</button>
+                <button type="button" disabled>&gt;&gt;</button>
               </div>
             </div>
-
           </div>
-
         </section>
       </main>
-
     </div>
-
   </div>
 </template>
 
 <script>
-import SidebarEmployer from '@/components/sb-employer.vue'
-import NavbarEmployer from '@/components/nv-employer.vue'
+import { auth, db } from "@/firebase"
+import { collection, doc, getDoc, onSnapshot, query, where } from "firebase/firestore"
 
 export default {
   name: "EmployeeRecords",
-  components:{
-    SidebarEmployer,
-    NavbarEmployer
+
+  data() {
+    return {
+      search: "",
+      loading: true,
+      loadError: "",
+      employees: [],
+      stopSync: null
+    }
+  },
+
+  computed: {
+    filteredEmployees() {
+      const term = String(this.search || "").trim().toLowerCase()
+      if (!term) return this.employees
+
+      return this.employees.filter((employee) => {
+        return (
+          String(employee.name || "").toLowerCase().includes(term) ||
+          String(employee.email || "").toLowerCase().includes(term) ||
+          String(employee.contact || "").toLowerCase().includes(term) ||
+          String(employee.position || "").toLowerCase().includes(term) ||
+          String(employee.department || "").toLowerCase().includes(term)
+        )
+      })
+    }
+  },
+
+  async mounted() {
+    await this.bootstrapRecords()
+  },
+
+  beforeUnmount() {
+    if (typeof this.stopSync === "function") {
+      this.stopSync()
+      this.stopSync = null
+    }
+  },
+
+  methods: {
+    async bootstrapRecords() {
+      this.loading = true
+      this.loadError = ""
+
+      const uid = auth.currentUser?.uid
+      if (!uid) {
+        this.loading = false
+        this.loadError = "Session expired. Please login again."
+        return
+      }
+
+      try {
+        const profile = await this.getCurrentUserProfile(uid)
+        const sourceCollection = profile?.sourceCollection || "users"
+        const companyId = String(
+          profile?.companyId || localStorage.getItem("companyId") || ""
+        ).trim()
+
+        this.subscribeEmployees(sourceCollection, companyId)
+      } catch (err) {
+        console.error(err)
+        this.loading = false
+        this.loadError = "Failed to load employee records from Firebase."
+      }
+    },
+
+    async getCurrentUserProfile(uid) {
+      const lower = await getDoc(doc(db, "users", uid))
+      if (lower.exists()) {
+        return {
+          sourceCollection: "users",
+          ...lower.data()
+        }
+      }
+
+      const upper = await getDoc(doc(db, "Users", uid))
+      if (upper.exists()) {
+        return {
+          sourceCollection: "Users",
+          ...upper.data()
+        }
+      }
+
+      return null
+    },
+
+    subscribeEmployees(usersCollectionName, companyId) {
+      if (typeof this.stopSync === "function") {
+        this.stopSync()
+        this.stopSync = null
+      }
+
+      const baseCollection = collection(db, usersCollectionName)
+      const q = companyId
+        ? query(baseCollection, where("companyId", "==", companyId))
+        : query(baseCollection)
+
+      this.stopSync = onSnapshot(
+        q,
+        (snapshot) => {
+          this.employees = snapshot.docs
+            .map((docSnap) => this.normalizeEmployee(docSnap.id, docSnap.data()))
+            .filter((employee) => this.includeInEmployeeRecords(employee))
+            .sort((a, b) => b.createdAtMs - a.createdAtMs)
+          this.loading = false
+          this.loadError = ""
+        },
+        (err) => {
+          console.error(err)
+          this.loading = false
+          this.loadError =
+            err?.code === "permission-denied"
+              ? "Permission denied in Firestore rules for employee records."
+              : "Realtime sync failed. Please check Firebase connection."
+        }
+      )
+    },
+
+    includeInEmployeeRecords(employee) {
+      const role = String(employee.role || "").toLowerCase()
+      if (!role) return true
+      if (["admin", "company_admin", "applicant"].includes(role)) return false
+      return true
+    },
+
+    normalizeEmployee(id, raw) {
+      const createdAtMs = this.toMillis(
+        raw.createdAt || raw.applicationDate || raw.hiredAt || raw.temporaryPasswordIssuedAt
+      )
+
+      const status = String(
+        raw.employmentStatus ||
+        raw.status ||
+        (raw.isActive === false ? "inactive" : "active")
+      ).toLowerCase()
+
+      const applicationDate = raw.applicationDate || raw.createdAt || raw.hiredAt
+
+      return {
+        id,
+        role: String(raw.role || ""),
+        name: String(raw.username || raw.name || raw.displayName || raw.fullName || "Unnamed"),
+        licenseLabel: this.buildLicenseLabel(raw),
+        contact: String(raw.phone || raw.mobile || raw.contactNumber || "N/A"),
+        email: String(raw.email || "N/A"),
+        applicationDateLabel: this.formatDate(applicationDate),
+        createdAtMs,
+        gender: String(raw.gender || "Not specified"),
+        civilStatus: String(raw.civilStatus || raw.maritalStatus || "Not specified"),
+        status,
+        statusLabel: this.formatStatus(status),
+        position: String(raw.position || raw.jobTitle || raw.role || "Not specified"),
+        department: String(raw.department || raw.companyName || "Not specified")
+      }
+    },
+
+    buildLicenseLabel(raw) {
+      const value = String(raw.licenseNo || raw.pwdId || raw.employeeId || "").trim()
+      return value ? `License No: ${value}` : "License No: N/A"
+    },
+
+    toMillis(value) {
+      if (!value) return 0
+      if (typeof value?.toMillis === "function") return value.toMillis()
+      if (typeof value?.seconds === "number") return value.seconds * 1000
+      if (value instanceof Date) return value.getTime()
+
+      const parsed = Date.parse(String(value))
+      return Number.isNaN(parsed) ? 0 : parsed
+    },
+
+    formatDate(value) {
+      const ms = this.toMillis(value)
+      if (!ms) return "N/A"
+
+      return new Date(ms).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      })
+    },
+
+    formatStatus(status) {
+      const value = String(status || "").toLowerCase()
+      if (!value) return "Unknown"
+      return value.charAt(0).toUpperCase() + value.slice(1)
+    },
+
+    statusClass(status) {
+      const value = String(status || "").toLowerCase()
+      if (["active", "open", "employed"].includes(value)) return "active"
+      if (["on leave", "leave", "pending"].includes(value)) return "leave"
+      return "inactive"
+    }
   }
 }
 </script>
 
 <style scoped>
-
-/* ===== LAYOUT ===== */
-
 .app{
   display:flex;
   min-height:100vh;
@@ -176,8 +326,6 @@ main{
   padding:25px;
 }
 
-/* ===== HEADER ===== */
-
 .page-header{
   display:flex;
   justify-content:space-between;
@@ -190,18 +338,11 @@ main{
   color:#6b7280;
 }
 
-/* ===== CONTROLS ===== */
-
 .controls{
   display:flex;
   justify-content:space-between;
   align-items:center;
   margin-bottom:15px;
-}
-
-.right-controls{
-  display:flex;
-  gap:10px;
 }
 
 .search{
@@ -216,7 +357,11 @@ main{
   border-color:#2563eb;
 }
 
-/* ===== CARD ===== */
+.error{
+  color:#b91c1c;
+  font-size:13px;
+  margin-bottom:10px;
+}
 
 .card{
   background:white;
@@ -224,8 +369,6 @@ main{
   border-radius:12px;
   box-shadow:0 2px 6px rgba(0,0,0,0.04);
 }
-
-/* ===== TABLE ===== */
 
 table{
   width:100%;
@@ -252,8 +395,6 @@ small{
   text-align:center;
 }
 
-/* ===== BADGES ===== */
-
 .badge{
   padding:4px 10px;
   border-radius:20px;
@@ -270,28 +411,9 @@ small{
   color:#92400e;
 }
 
-/* ===== BUTTONS ===== */
-
-.btn{
-  padding:8px 14px;
-  border-radius:8px;
-  border:none;
-  cursor:pointer;
-  font-size:14px;
-}
-
-.add{
-  background:#2563eb;
-  color:white;
-}
-
-.outline{
-  background:white;
-  border:1px solid #d1d5db;
-}
-
-.add:hover{
-  background:#1d4ed8;
+.inactive{
+  background:#e5e7eb;
+  color:#374151;
 }
 
 .icon-btn{
@@ -300,8 +422,6 @@ small{
   font-size:18px;
   cursor:pointer;
 }
-
-/* ===== FOOTER ===== */
 
 .table-footer{
   display:flex;
@@ -326,4 +446,9 @@ small{
   cursor:pointer;
 }
 
+.pagination select:disabled,
+.pagination button:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
 </style>

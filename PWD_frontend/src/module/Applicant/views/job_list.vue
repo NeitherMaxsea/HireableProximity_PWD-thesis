@@ -196,19 +196,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from "vue"
+import { ref, onMounted, onBeforeUnmount, watch, computed } from "vue"
 import { db } from "@/firebase"
-import { addDoc, collection, serverTimestamp, onSnapshot, query, orderBy } from "firebase/firestore"
+import { addDoc, collection, serverTimestamp, onSnapshot } from "firebase/firestore"
 
 const jobs = ref([])
 const selectedJob = ref(null)
 const currentPhotoIndex = ref(0)
 const isLightboxOpen = ref(false)
+let unsubscribeJobs = null
 
 onMounted(() => {
-  const q = query(collection(db, "jobs"), orderBy("createdAt", "desc"))
-
-  onSnapshot(q, snapshot => {
+  unsubscribeJobs = onSnapshot(collection(db, "jobs"), snapshot => {
     const list = snapshot.docs.map(d => ({
       id: d.id,
       ...d.data()
@@ -235,8 +234,27 @@ onMounted(() => {
         }
       })
       .filter(job => job.status === "open")
+      .sort((a, b) => getCreatedAtMillis(b.createdAt) - getCreatedAtMillis(a.createdAt))
+
+    if (selectedJob.value) {
+      selectedJob.value = jobs.value.find(j => j.id === selectedJob.value.id) || null
+    }
   })
 })
+
+onBeforeUnmount(() => {
+  if (typeof unsubscribeJobs === "function") {
+    unsubscribeJobs()
+  }
+})
+
+const getCreatedAtMillis = (ts) => {
+  if (!ts) return 0
+  if (typeof ts?.toMillis === "function") return ts.toMillis()
+  if (typeof ts?.seconds === "number") return ts.seconds * 1000
+  if (ts instanceof Date) return ts.getTime()
+  return 0
+}
 
 // auto clear if deleted
 watch(jobs, (newJobs) => {
