@@ -96,7 +96,7 @@
 import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
-import { signInWithEmailAndPassword } from "firebase/auth"
+import { signInWithEmailAndPassword, signOut } from "firebase/auth"
 
 import { auth, db } from "@/firebase"
 
@@ -135,6 +135,13 @@ const togglePassword = () => {
 /* GO TO REGISTER */
 const goRegister = () => {
   router.push("/role")
+}
+
+function createSessionId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 async function getUserProfile(uid) {
@@ -208,6 +215,7 @@ const login = async () => {
       return
     }
 
+    const sessionId = createSessionId()
     try {
       await updateDoc(profile.ref, {
         email: data.email || cred.user.email || normalizedEmail,
@@ -218,12 +226,20 @@ const login = async () => {
         emailVerified: !!cred.user.emailVerified,
         isActive: true,
         status: "active",
+        activeSessionId: sessionId,
+        activeSessionUpdatedAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
         lastSeenAt: serverTimestamp(),
         syncedAt: serverTimestamp()
       })
     } catch (syncErr) {
       console.warn("User sync update failed:", syncErr)
+      Toastify({
+        text: "Unable to establish secure session. Please check Firestore Rules.",
+        backgroundColor: "#e74c3c"
+      }).showToast()
+      await signOut(auth)
+      return
     }
 
     // ✅ STORE USER INFO FOR SIDEBAR DISPLAY
@@ -232,6 +248,9 @@ const login = async () => {
     localStorage.setItem("userRole", role || "")
     localStorage.setItem("companyId", data.companyId || "")
     localStorage.setItem("companyName", data.companyName || "")
+    localStorage.setItem("activeSessionId", sessionId)
+    localStorage.setItem("sessionUid", cred.user.uid)
+    localStorage.setItem("userCollection", profile.collectionName)
 
     Toastify({
       text: "Login successful!",

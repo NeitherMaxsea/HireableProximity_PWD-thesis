@@ -83,7 +83,7 @@
     <div class="nav-right">
       <div class="nav-actions">
         <router-link to="/find-jobs" class="btn btn-find">
-          Find Job
+          Find a Job
         </router-link>
         <router-link to="/login" class="btn btn-login">
           Login

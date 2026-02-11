@@ -42,6 +42,7 @@ import FinanceDashboard from '@/module/Employer/views/Finance/FinanceDashboard.v
 import CompanyAdminLayout from '@/module/CompanyAdmin/layout/CompanyAdminLayout.vue'
 import CompanyAdminDashboard from '@/module/CompanyAdmin/views/Dashboard.vue'
 import CompanyAdminAddEmployee from '@/module/CompanyAdmin/views/AddEmployee.vue'
+import CompanyAdminLogs from '@/module/CompanyAdmin/views/Logs.vue'
 
 // APPLICANT
 import SidebarApplicant from '@/components/sb-applicant.vue'
@@ -61,6 +62,10 @@ const routes = [
     name: 'LandingPage',
     component: LandingPage,
     meta: { title: "PWD Job Portal | Home" }
+  },
+  {
+    path: '/find-jobs',
+    redirect: '/applicant/job_list'
   },
 
   // ================= AUTH =================
@@ -260,6 +265,12 @@ const routes = [
         name: 'CompanyAdminAddEmployee',
         component: CompanyAdminAddEmployee,
         meta: { title: "PWD Job Portal | Add Employee" }
+      },
+      {
+        path: 'logs',
+        name: 'CompanyAdminLogs',
+        component: CompanyAdminLogs,
+        meta: { title: "PWD Job Portal | Company Admin Logs" }
       }
     ]
   },
