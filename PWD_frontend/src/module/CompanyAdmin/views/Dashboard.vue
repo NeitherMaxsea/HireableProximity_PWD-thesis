@@ -1,15 +1,19 @@
 <template>
   <section class="page">
-    <h2>Company Admin Dashboard</h2>
-    <p>Manage your company team and role-based accounts.</p>
+    <div class="page-header">
+      <div>
+        <h2>Company Admin Dashboard</h2>
+        <p>Manage your company team and role-based accounts.</p>
+      </div>
+    </div>
 
     <div class="cards">
       <div class="card">
-        <span>Company</span>
+        <span class="label">Company</span>
         <strong>{{ companyName }}</strong>
       </div>
       <div class="card">
-        <span>Company ID</span>
+        <span class="label">Company ID</span>
         <strong>{{ companyId || "-" }}</strong>
       </div>
     </div>
@@ -22,8 +26,17 @@ const companyId = localStorage.getItem("companyId") || ""
 </script>
 
 <style scoped>
+.page {
+  padding: 4px;
+}
+
+.page-header {
+  margin-bottom: 16px;
+}
+
 .page h2 {
   margin: 0;
+  color: #111827;
 }
 
 .page p {
@@ -39,19 +52,23 @@ const companyId = localStorage.getItem("companyId") || ""
 
 .card {
   background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.card span {
+.label {
   font-size: 12px;
   color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .card strong {
   display: block;
-  margin-top: 5px;
-  color: #0f172a;
+  margin-top: 8px;
+  color: #111827;
+  font-size: 18px;
 }
 </style>

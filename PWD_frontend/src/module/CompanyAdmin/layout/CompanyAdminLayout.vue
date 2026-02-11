@@ -1,119 +1,56 @@
 <template>
-  <div class="company-layout">
-    <aside class="sidebar">
-      <div class="brand">
-        <h3>Company Admin</h3>
-        <p>{{ companyName }}</p>
-      </div>
-
-      <nav class="menu">
-        <router-link to="/company-admin/dashboard" class="menu-item">Dashboard</router-link>
-        <router-link to="/company-admin/add-employee" class="menu-item">Add Employee</router-link>
-      </nav>
-
-      <button class="logout-btn" @click="logout">Logout</button>
+  <div class="layout">
+    <aside class="sidebar-area">
+      <SidebarCompanyAdmin />
     </aside>
 
-    <main class="content">
-      <router-view />
-    </main>
+    <div class="main-content">
+      <NavbarCompanyAdmin />
+
+      <main class="page-content">
+        <transition name="page-fade" mode="out-in">
+          <router-view />
+        </transition>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue"
-import { useRouter } from "vue-router"
-import { signOut } from "firebase/auth"
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore"
-import { auth, db } from "@/firebase"
-
-const router = useRouter()
-const companyName = ref(localStorage.getItem("companyName") || "My Company")
-
-async function logout() {
-  const uid = auth.currentUser?.uid
-  if (uid) {
-    const payload = {
-      status: "inactive",
-      isActive: false,
-      lastLogoutAt: serverTimestamp(),
-      lastSeenAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    }
-    try {
-      await updateDoc(doc(db, "users", uid), payload)
-    } catch {
-      try {
-        await updateDoc(doc(db, "Users", uid), payload)
-      } catch {
-        // continue
-      }
-    }
-  }
-
-  await signOut(auth)
-  localStorage.clear()
-  router.push("/login")
-}
+import SidebarCompanyAdmin from "@/components/sb-company-admin.vue"
+import NavbarCompanyAdmin from "@/components/nv-company-admin.vue"
 </script>
 
 <style scoped>
-.company-layout {
+.layout {
   display: flex;
-  min-height: 100vh;
-  background: #f8fafc;
+  height: 100vh;
 }
 
-.sidebar {
-  width: 250px;
-  background: #0f172a;
-  color: #e2e8f0;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.brand h3 {
-  margin: 0;
-}
-
-.brand p {
-  margin: 6px 0 0;
-  color: #94a3b8;
-  font-size: 13px;
-}
-
-.menu {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.menu-item {
-  text-decoration: none;
-  color: #e2e8f0;
-  padding: 10px 12px;
-  border-radius: 8px;
-}
-
-.menu-item.router-link-active,
-.menu-item:hover {
-  background: #1e293b;
-}
-
-.logout-btn {
-  margin-top: auto;
-  border: none;
-  background: #991b1b;
-  color: #fff;
-  border-radius: 8px;
-  padding: 10px 12px;
-  cursor: pointer;
-}
-
-.content {
+.main-content {
   flex: 1;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #f5f7fb;
+}
+
+.page-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.page-fade-enter-active {
+  transition: opacity 0.25s ease;
+}
+
+.page-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
 }
 </style>

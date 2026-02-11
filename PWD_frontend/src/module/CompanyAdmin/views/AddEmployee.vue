@@ -1,11 +1,16 @@
 <template>
   <section class="page">
-    <h2>Add Employee Account</h2>
-    <p>Create role accounts for HR, Finance, and Operation using temporary passwords.</p>
+    <div class="page-header">
+      <div>
+        <h2>Add Employee Account</h2>
+        <p>Create role accounts for HR, Finance, and Operation using temporary passwords.</p>
+      </div>
+    </div>
 
     <div v-if="loadError" class="error">{{ loadError }}</div>
 
     <div class="form-card">
+      <h3>Create New Account</h3>
       <div class="grid">
         <div>
           <label>Username</label>
@@ -48,8 +53,12 @@
           <tr v-for="employee in employees" :key="employee.id">
             <td>{{ employee.username || "-" }}</td>
             <td>{{ employee.email || "-" }}</td>
-            <td>{{ employee.role || "-" }}</td>
-            <td>{{ employee.status || "-" }}</td>
+            <td>
+              <span class="pill role">{{ employee.role || "-" }}</span>
+            </td>
+            <td>
+              <span class="pill status">{{ employee.status || "-" }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -269,8 +278,17 @@ function toast(text, backgroundColor) {
 </script>
 
 <style scoped>
+.page {
+  padding: 4px;
+}
+
+.page-header {
+  margin-bottom: 16px;
+}
+
 .page h2 {
   margin: 0;
+  color: #111827;
 }
 
 .page p {
@@ -282,26 +300,33 @@ function toast(text, backgroundColor) {
   background: #fee2e2;
   color: #991b1b;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 12px;
 }
 
 .form-card,
 .table-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.form-card h3,
+.table-card h3 {
+  margin: 0 0 14px;
+  color: #111827;
 }
 
 .table-card {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 label {
@@ -314,20 +339,29 @@ label {
 input,
 select {
   width: 100%;
-  height: 38px;
-  border: 1px solid #cbd5e1;
+  height: 40px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 0 10px;
+  font-size: 14px;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #2563eb;
 }
 
 .create-btn {
-  margin-top: 12px;
+  margin-top: 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #2563eb;
   color: #fff;
-  padding: 10px 14px;
+  padding: 11px 16px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .create-btn:disabled {
@@ -343,8 +377,8 @@ table {
 th,
 td {
   text-align: left;
-  padding: 10px 8px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 11px 8px;
+  border-bottom: 1px solid #e5e7eb;
   font-size: 14px;
 }
 
@@ -356,5 +390,23 @@ th {
 .empty {
   color: #64748b;
   padding: 10px 0;
+}
+
+.pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.pill.role {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.pill.status {
+  background: #dcfce7;
+  color: #166534;
 }
 </style>
