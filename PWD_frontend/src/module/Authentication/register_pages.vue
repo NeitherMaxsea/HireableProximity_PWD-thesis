@@ -27,7 +27,7 @@
       <p class="form-p">
         Registering as:
         <span class="role-label" :class="selectedRole">
-          {{ selectedRole }}
+          {{ roleLabel }}
         </span>
       </p>
 
@@ -42,6 +42,23 @@
         <label>Email</label>
         <input type="email" v-model="email" placeholder="Enter email" />
       </div>
+
+      <template v-if="isEmployerRegistration">
+        <div class="form-group">
+          <label>Company Name</label>
+          <input type="text" v-model="companyName" placeholder="Enter company name" />
+        </div>
+
+        <div class="form-group">
+          <label>Company Address</label>
+          <input type="text" v-model="companyAddress" placeholder="Enter company address" />
+        </div>
+
+        <div class="form-group">
+          <label>Industry</label>
+          <input type="text" v-model="companyIndustry" placeholder="Enter company industry" />
+        </div>
+      </template>
 
       <!-- PASSWORD -->
       <div class="form-group password-group">
@@ -111,7 +128,7 @@
 import Toastify from "toastify-js"
 import "toastify-js/src/toastify.css"
 
-import { doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore"
+import { collection, doc, serverTimestamp, setDoc, getDoc, deleteDoc } from "firebase/firestore"
 import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth"
 import { auth, db } from "@/firebase"
 import { sendOtp } from "@/services/otp.services"
@@ -123,6 +140,9 @@ export default {
     return {
       username: "",
       email: "",
+      companyName: "",
+      companyAddress: "",
+      companyIndustry: "",
       password: "",
       confirmPassword: "",
       showPassword: false,
@@ -149,11 +169,24 @@ export default {
   },
 
   computed: {
+    isEmployerRegistration() {
+      return String(this.selectedRole || "").toLowerCase() === "employer"
+    },
+
+    roleLabel() {
+      return this.isEmployerRegistration ? "company admin" : this.selectedRole
+    },
+
     rules() {
+      const companyOk = this.isEmployerRegistration
+        ? this.companyName && this.companyAddress && this.companyIndustry
+        : true
+
       return {
         filled:
           this.username &&
           this.email &&
+          companyOk &&
           this.password &&
           this.confirmPassword,
         length: this.password.length >= 8 && this.password.length <= 16,
@@ -194,6 +227,7 @@ export default {
   try {
     const normalizedUsername = this.username.trim()
     const lowerUsername = normalizedUsername.toLowerCase()
+    const normalizedRole = this.isEmployerRegistration ? "company_admin" : this.selectedRole
 
     if (lowerUsername.includes("maganda")) {
       Toastify({
@@ -225,43 +259,106 @@ export default {
       username: normalizedUsername
     })
 
-    await setDoc(doc(db, "users", cred.user.uid), {
-      uid: cred.user.uid,
-      username: normalizedUsername,
-      usernameLower: lowerUsername,
-      email: this.email,
-      emailLower: this.email.toLowerCase(),
-      role: this.selectedRole,
-      authProvider: "password",
-      authLinked: true,
-      emailVerified: false,
-      isActive: true,
-      status: "active",
-      lastLoginAt: null,
-      lastSeenAt: null,
-      source: "firebase-auth",
-      syncedAt: serverTimestamp(),
-      createdAt: serverTimestamp()
-    })
+    const companyId = this.isEmployerRegistration
+      ? `company_${cred.user.uid}`
+      : ""
+
+    try {
+      const profilePayload = {
+        uid: cred.user.uid,
+        username: normalizedUsername,
+        usernameLower: lowerUsername,
+        email: this.email,
+        emailLower: this.email.toLowerCase(),
+        role: normalizedRole,
+        companyId: companyId || null,
+        companyName: this.isEmployerRegistration ? this.companyName.trim() : null,
+        authProvider: "password",
+        authLinked: true,
+        emailVerified: false,
+        isActive: true,
+        status: "active",
+        lastLoginAt: null,
+        lastSeenAt: null,
+        source: "firebase-auth",
+        syncedAt: serverTimestamp(),
+        createdAt: serverTimestamp()
+      }
+
+      await setDoc(doc(db, "users", cred.user.uid), profilePayload)
+      try {
+        // Mirror for projects still reading legacy "Users" collection.
+        await setDoc(doc(db, "Users", cred.user.uid), profilePayload)
+      } catch {
+        // non-blocking
+      }
+    } catch (profileErr) {
+      try {
+        await deleteDoc(doc(db, "usernames", lowerUsername))
+      } catch {
+        // ignore rollback failure
+      }
+      try {
+        await deleteUser(cred.user)
+      } catch {
+        // ignore rollback failure
+      }
+      throw profileErr
+    }
+
+    if (this.isEmployerRegistration) {
+      try {
+        await setDoc(doc(db, "companies", companyId), {
+          id: companyId,
+          companyName: this.companyName.trim(),
+          companyEmail: this.email.toLowerCase(),
+          companyAddress: this.companyAddress.trim(),
+          companyIndustry: this.companyIndustry.trim(),
+          createdByUid: cred.user.uid,
+          createdByEmail: this.email.toLowerCase(),
+          createdAt: serverTimestamp(),
+          status: "active"
+        })
+      } catch (companyErr) {
+        // Keep registration successful even if company collection rules are stricter.
+        console.warn("Company profile write skipped:", companyErr)
+      }
+    }
 
     localStorage.removeItem("selectedRole")
+    localStorage.setItem("pendingOtpEmail", this.email)
+    localStorage.setItem("pendingOtpRole", normalizedRole)
 
-    await sendOtp(this.email)
+    let otpSendFailed = false
+    try {
+      await sendOtp(this.email)
+      Toastify({
+        text: "OTP sent to your email. Please verify.",
+        backgroundColor: "#2563eb"
+      }).showToast()
+    } catch (otpErr) {
+      otpSendFailed = true
+      console.error("Initial OTP send failed:", otpErr)
+      Toastify({
+        text: "Account created. OTP send failed, retry on OTP page.",
+        backgroundColor: "#f59e0b"
+      }).showToast()
+    }
 
-    Toastify({
-      text: "📩 OTP sent to your email. Please verify.",
-      backgroundColor: "#2563eb"
-    }).showToast()
-
-    // ✅ REDIRECT TO OTP FORM WITH EMAIL
     this.$router.push({
       path: "/auth/otp",
-      query: { email: this.email, role: this.selectedRole }
+      query: {
+        email: this.email,
+        role: normalizedRole,
+        otpSendFailed: otpSendFailed ? "1" : "0"
+      }
     })
 
   } catch (error) {
     let message = "Registration failed"
-    if (error?.code === "auth/email-already-in-use") {
+    if (String(error?.code || "").includes("permission-denied")) {
+      message = "Firestore permission denied. Update rules for users/usernames."
+    } else if (error?.code === "auth/email-already-in-use") {
       message = "Email already registered"
     } else if (error?.code === "auth/invalid-email") {
       message = "Invalid email"

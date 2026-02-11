@@ -80,7 +80,8 @@
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 import { signOut } from "firebase/auth"
-import { auth } from "@/firebase"
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore"
+import { auth, db } from "@/firebase"
 
 defineProps({
   mobileOpen: {
@@ -102,6 +103,26 @@ const closeMobile = () => {
 }
 
 const logout = async () => {
+  const uid = auth.currentUser?.uid
+  if (uid) {
+    const payload = {
+      status: "inactive",
+      isActive: false,
+      lastLogoutAt: serverTimestamp(),
+      lastSeenAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+    try {
+      await updateDoc(doc(db, "users", uid), payload)
+    } catch {
+      try {
+        await updateDoc(doc(db, "Users", uid), payload)
+      } catch {
+        // continue logout even if Firestore write fails
+      }
+    }
+  }
+
   await signOut(auth)
   emit("close-mobile")
   router.push("/login")

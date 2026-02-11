@@ -61,6 +61,7 @@
             <th>Status</th>
             <th>Firebase Sync</th>
             <th>Last Login</th>
+            <th>Last Logout</th>
             <th>Created</th>
             <th>Actions</th>
           </tr>
@@ -86,6 +87,7 @@
               </span>
             </td>
             <td>{{ user.lastLoginLabel }}</td>
+            <td>{{ user.lastLogoutLabel }}</td>
             <td>{{ user.createdLabel }}</td>
             <td class="actions-cell">
               <button class="action-btn view" @click="openViewModal(user)">View</button>
@@ -114,6 +116,7 @@
           <p><strong>Status:</strong> {{ selectedUser.statusLabel }}</p>
           <p><strong>Firebase Sync:</strong> {{ selectedUser.syncLabel }}</p>
           <p><strong>Last Login:</strong> {{ selectedUser.lastLoginLabel }}</p>
+          <p><strong>Last Logout:</strong> {{ selectedUser.lastLogoutLabel }}</p>
           <p><strong>Created:</strong> {{ selectedUser.createdLabel }}</p>
         </div>
       </div>
@@ -408,6 +411,7 @@ function normalizeUser(id, data, collectionName = "users") {
   const status = resolveStatus(data)
   const createdAtMs = toMillis(data.createdAt)
   const lastLoginAtMs = toMillis(data.lastLoginAt)
+  const lastLogoutAtMs = toMillis(data.lastLogoutAt)
   const syncState = resolveSyncState(data)
 
   return {
@@ -423,6 +427,8 @@ function normalizeUser(id, data, collectionName = "users") {
     displayName: data.username || data.name || data.email || "Unknown User",
     lastLoginAtMs,
     lastLoginLabel: lastLoginAtMs ? formatDateTime(lastLoginAtMs) : "-",
+    lastLogoutAtMs,
+    lastLogoutLabel: lastLogoutAtMs ? formatDateTime(lastLogoutAtMs) : "-",
     createdAtMs,
     createdLabel: createdAtMs ? formatDate(createdAtMs) : "-"
   }

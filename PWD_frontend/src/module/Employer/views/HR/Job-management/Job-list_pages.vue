@@ -11,6 +11,9 @@
               <h2>Job Listings</h2>
               <p class="subtitle">Browse and manage your posted jobs.</p>
             </div>
+            <button class="backfill-btn" :disabled="backfilling" @click="backfillLegacyJobAccounts">
+              {{ backfilling ? "Fixing..." : "Fix Legacy Accounts" }}
+            </button>
           </div>
 
           <!-- SEARCH -->
@@ -266,7 +269,7 @@
 </template>
 
 <script>
-import { db } from "@/firebase"
+import { auth, db } from "@/firebase"
 import api from "@/services/api"
 import { toast } from "vue3-toastify"
 import {
@@ -276,7 +279,10 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  orderBy
+  orderBy,
+  getDoc,
+  writeBatch,
+  serverTimestamp
 } from "firebase/firestore"
 
 export default {
@@ -286,6 +292,7 @@ export default {
     return {
       jobs: [],
       search: "",
+      backfilling: false,
       showModal: false,
       editJobData: {},
       showViewModal: false,
@@ -334,6 +341,83 @@ export default {
   },
 
   methods: {
+    async resolveActorMeta() {
+      const user = auth.currentUser
+      if (!user?.uid) return null
+
+      let profile = {}
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid))
+        if (snap.exists()) {
+          profile = snap.data() || {}
+        }
+      } catch {
+        // fallback to auth/localStorage
+      }
+
+      const email = String(
+        profile.email || user.email || localStorage.getItem("userEmail") || ""
+      ).trim()
+      const name = String(
+        profile.username ||
+        profile.name ||
+        localStorage.getItem("userName") ||
+        email
+      ).trim()
+      const role = String(profile.role || localStorage.getItem("userRole") || "").trim()
+
+      if (!email) return null
+      return {
+        uid: user.uid,
+        email,
+        name,
+        role
+      }
+    },
+
+    hasPostedBy(job) {
+      return !!(
+        String(job.postedByEmail || "").trim() ||
+        String(job.postedByName || "").trim() ||
+        String(job.postedByUid || "").trim()
+      )
+    },
+
+    async backfillLegacyJobAccounts() {
+      const legacyJobs = this.jobs.filter((job) => !this.hasPostedBy(job))
+      if (!legacyJobs.length) {
+        toast.info("No legacy jobs found. All accounts are already set.")
+        return
+      }
+
+      const actor = await this.resolveActorMeta()
+      if (!actor) {
+        toast.error("Cannot identify your account. Please login again.")
+        return
+      }
+
+      this.backfilling = true
+      try {
+        const batch = writeBatch(db)
+        legacyJobs.forEach((job) => {
+          batch.update(doc(db, "jobs", job.id), {
+            postedByName: actor.name,
+            postedByEmail: actor.email,
+            postedByRole: actor.role,
+            postedByUid: actor.uid,
+            legacyAccountBackfilledAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          })
+        })
+        await batch.commit()
+        toast.success(`Updated ${legacyJobs.length} legacy job account(s).`)
+      } catch (err) {
+        console.error(err)
+        toast.error("Failed to update legacy job accounts.")
+      } finally {
+        this.backfilling = false
+      }
+    },
 
     openEdit(job) {
       this.editJobData = { ...job }
@@ -519,6 +603,23 @@ export default {
 .subtitle{
   font-size:14px;
   color:#64748b;
+}
+
+.backfill-btn{
+  border:none;
+  border-radius:10px;
+  background:#2563eb;
+  color:#ffffff;
+  padding:10px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+}
+
+.backfill-btn:disabled{
+  opacity:.7;
+  cursor:not-allowed;
 }
 
 /* SEARCH */

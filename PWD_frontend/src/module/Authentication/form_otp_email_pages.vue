@@ -90,7 +90,7 @@ import { verifyOtp, sendOtp } from "@/services/otp.services"
 const route = useRoute()
 const router = useRouter()
 
-const email = ref(route.query.email || "")
+const email = ref(route.query.email || localStorage.getItem("pendingOtpEmail") || "")
 const role = route.query.role || "applicant"
 const mode = route.query.mode || ""
 
@@ -122,6 +122,22 @@ const startTimer = () => {
 }
 
 onMounted(() => {
+  if (!email.value) {
+    Toastify({
+      text: "Missing OTP email. Please register again.",
+      backgroundColor: "#e74c3c"
+    }).showToast()
+    router.replace("/register")
+    return
+  }
+
+  if (route.query.otpSendFailed === "1") {
+    Toastify({
+      text: "OTP not sent earlier. Click Resend OTP.",
+      backgroundColor: "#f59e0b"
+    }).showToast()
+  }
+
   startTimer()
 })
 
@@ -182,15 +198,20 @@ const handleVerify = async () => {
 const handleResend = async () => {
   if (!canResend.value || resendCount.value >= maxResend) return
 
-  resendCount.value++
-  startTimer()
-
-  await sendOtp(email.value)
-
-  Toastify({
-    text: "📩 OTP resent",
-    backgroundColor: "#2563eb"
-  }).showToast()
+  try {
+    await sendOtp(email.value)
+    resendCount.value++
+    startTimer()
+    Toastify({
+      text: "OTP resent",
+      backgroundColor: "#2563eb"
+    }).showToast()
+  } catch {
+    Toastify({
+      text: "Failed to resend OTP. Check backend/mail settings.",
+      backgroundColor: "#e74c3c"
+    }).showToast()
+  }
 }
 
 const onOtpInput = (e, index) => {

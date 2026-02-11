@@ -137,6 +137,22 @@ const goRegister = () => {
   router.push("/role")
 }
 
+async function getUserProfile(uid) {
+  const lowerRef = doc(db, "users", uid)
+  const lowerSnap = await getDoc(lowerRef)
+  if (lowerSnap.exists()) {
+    return { data: lowerSnap.data(), ref: lowerRef, collectionName: "users" }
+  }
+
+  const upperRef = doc(db, "Users", uid)
+  const upperSnap = await getDoc(upperRef)
+  if (upperSnap.exists()) {
+    return { data: upperSnap.data(), ref: upperRef, collectionName: "Users" }
+  }
+
+  return null
+}
+
 /* LOGIN */
 const login = async () => {
   const normalizedEmail = email.value.trim()
@@ -158,8 +174,8 @@ const login = async () => {
       password.value
     )
 
-    const userDoc = await getDoc(doc(db, "users", cred.user.uid))
-    if (!userDoc.exists()) {
+    const profile = await getUserProfile(cred.user.uid)
+    if (!profile) {
       Toastify({
         text: "Profile not found. Please register again.",
         backgroundColor: "#e74c3c",
@@ -167,14 +183,36 @@ const login = async () => {
       return
     }
 
-    const data = userDoc.data()
-    const role = data.role
+    const data = profile.data || {}
+    let role = data.role
+    const pendingOtpEmail = localStorage.getItem("pendingOtpEmail") || ""
+    const pendingOtpRole = localStorage.getItem("pendingOtpRole") || ""
+    if (!role && pendingOtpRole && pendingOtpEmail.toLowerCase() === normalizedEmail.toLowerCase()) {
+      role = pendingOtpRole
+      try {
+        await updateDoc(profile.ref, {
+          role: pendingOtpRole,
+          updatedAt: serverTimestamp()
+        })
+      } catch {
+        // no-op
+      }
+    }
+
     const normalizedRole = String(role || "").toLowerCase()
+    if (!normalizedRole) {
+      Toastify({
+        text: "Role missing in Firestore profile. Please contact admin.",
+        backgroundColor: "#e74c3c",
+      }).showToast()
+      return
+    }
 
     try {
-      await updateDoc(doc(db, "users", cred.user.uid), {
+      await updateDoc(profile.ref, {
         email: data.email || cred.user.email || normalizedEmail,
         emailLower: (data.email || cred.user.email || normalizedEmail).toLowerCase(),
+        role: normalizedRole,
         authProvider: cred.user.providerData?.[0]?.providerId || "password",
         authLinked: true,
         emailVerified: !!cred.user.emailVerified,
@@ -192,6 +230,8 @@ const login = async () => {
     localStorage.setItem("userName", data.username || data.name || "User")
     localStorage.setItem("userEmail", data.email || cred.user.email || normalizedEmail)
     localStorage.setItem("userRole", role || "")
+    localStorage.setItem("companyId", data.companyId || "")
+    localStorage.setItem("companyName", data.companyName || "")
 
     Toastify({
       text: "Login successful!",
@@ -201,8 +241,12 @@ const login = async () => {
     // 🚦 REDIRECT
     if (normalizedRole === "applicant") {
       router.push("/applicant/job_list")
-    } else if (normalizedRole === "employer") {
+    } else if (normalizedRole === "employer" || normalizedRole === "hr") {
       router.push("/employer/HR/dashboard")
+    } else if (normalizedRole === "finance") {
+      router.push("/employer/finance/dashboard")
+    } else if (normalizedRole === "company_admin") {
+      router.push("/company-admin/dashboard")
     } else if (
       normalizedRole.includes("operator") ||
       normalizedRole.includes("operation")

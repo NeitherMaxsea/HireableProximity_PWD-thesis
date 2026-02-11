@@ -40,6 +40,11 @@
         <span>Reports</span>
       </RouterLink>
 
+      <RouterLink to="/admin/logs" class="item">
+        <i class="bi bi-journal-text"></i>
+        <span>Logs</span>
+      </RouterLink>
+
       <RouterLink to="/admin/notifications" class="item">
         <i class="bi bi-bell"></i>
         <span>Notifications</span>

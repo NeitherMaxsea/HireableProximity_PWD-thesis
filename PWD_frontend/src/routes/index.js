@@ -12,6 +12,7 @@ import ResetPassword from '@/module/Authentication/reset-password-pages.vue'
 import AdminLayout from '@/module/Admin/layout/adminlayout.vue'
 import AdminDashboard from '@/module/Admin/views/Dashboard.vue'
 import AdminUsers from '@/module/Admin/views/Users.vue'
+import AdminLogs from '@/module/Admin/views/Logs.vue'
 import SidebarAdmin from '@/components/sidebar-admin.vue'
 import NavbarAdmin from '@/components/navbar-admin.vue'
 
@@ -35,6 +36,12 @@ import TrainingProgress from '@/module/Employer/views/Operation/TrainingProgress
 import WorkAssignment from '@/module/Employer/views/Operation/WorkAssignment.vue'
 import ReportsAnalytics from '@/module/Employer/views/Operation/ReportsAnalytics.vue'
 import EmployeeOperationsProfile from '@/module/Employer/views/Operation/EmployeeProfile.vue'
+import FinanceDashboard from '@/module/Employer/views/Finance/FinanceDashboard.vue'
+
+// COMPANY ADMIN
+import CompanyAdminLayout from '@/module/CompanyAdmin/layout/CompanyAdminLayout.vue'
+import CompanyAdminDashboard from '@/module/CompanyAdmin/views/Dashboard.vue'
+import CompanyAdminAddEmployee from '@/module/CompanyAdmin/views/AddEmployee.vue'
 
 // APPLICANT
 import SidebarApplicant from '@/components/sb-applicant.vue'
@@ -117,6 +124,12 @@ const routes = [
         name: 'AdminUsers',
         component: AdminUsers,
         meta: { title: "PWD Job Portal | Admin Users" }
+      },
+      {
+        path: 'logs',
+        name: 'AdminLogs',
+        component: AdminLogs,
+        meta: { title: "PWD Job Portal | Admin Logs" }
       }
     ]
   },
@@ -216,6 +229,37 @@ const routes = [
         name: 'EmployeeOperationsProfile',
         component: EmployeeOperationsProfile,
         meta: { title: "PWD Job Portal | Employee Profile" }
+      }
+    ]
+  },
+  {
+    path: '/employer/finance',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'FinanceDashboard',
+        component: FinanceDashboard,
+        meta: { title: "PWD Job Portal | Finance Dashboard" }
+      }
+    ]
+  },
+
+  // ================= COMPANY ADMIN =================
+  {
+    path: '/company-admin',
+    component: CompanyAdminLayout,
+    children: [
+      {
+        path: 'dashboard',
+        name: 'CompanyAdminDashboard',
+        component: CompanyAdminDashboard,
+        meta: { title: "PWD Job Portal | Company Admin Dashboard" }
+      },
+      {
+        path: 'add-employee',
+        name: 'CompanyAdminAddEmployee',
+        component: CompanyAdminAddEmployee,
+        meta: { title: "PWD Job Portal | Add Employee" }
       }
     ]
   },

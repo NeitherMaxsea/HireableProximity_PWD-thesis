@@ -165,6 +165,9 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
+import { signOut } from "firebase/auth"
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore"
+import { auth, db } from "@/firebase"
 
 const route = useRoute()
 const router = useRouter()
@@ -216,7 +219,28 @@ function handleClickOutside(e) {
   }
 }
 
-function logout() {
+async function logout() {
+  const uid = auth.currentUser?.uid
+  if (uid) {
+    const payload = {
+      status: "inactive",
+      isActive: false,
+      lastLogoutAt: serverTimestamp(),
+      lastSeenAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+    try {
+      await updateDoc(doc(db, "users", uid), payload)
+    } catch {
+      try {
+        await updateDoc(doc(db, "Users", uid), payload)
+      } catch {
+        // continue logout even if Firestore write fails
+      }
+    }
+  }
+
+  await signOut(auth)
   const darkMode = localStorage.getItem("sidebarDark")
   localStorage.clear()
   if (darkMode !== null) {

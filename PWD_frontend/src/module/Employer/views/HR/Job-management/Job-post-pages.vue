@@ -148,8 +148,9 @@
 </template>
 
 <script>
-import { db } from "@/firebase"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { auth, db } from "@/firebase"
+import { onAuthStateChanged } from "firebase/auth"
+import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore"
 import api from "@/services/api"
 import { toast } from "vue3-toastify"
 
@@ -181,6 +182,67 @@ export default {
     },
 
   methods: {
+    waitForAuthUser(timeoutMs = 4000) {
+      return new Promise((resolve) => {
+        if (auth.currentUser) {
+          resolve(auth.currentUser)
+          return
+        }
+
+        let settled = false
+        const timer = setTimeout(() => {
+          if (settled) return
+          settled = true
+          unsubscribe()
+          resolve(auth.currentUser || null)
+        }, timeoutMs)
+
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (settled) return
+          settled = true
+          clearTimeout(timer)
+          unsubscribe()
+          resolve(user || null)
+        })
+      })
+    },
+
+    async resolvePosterMeta() {
+      const user = await this.waitForAuthUser()
+      if (!user?.uid) return null
+
+      let profile = {}
+      try {
+        const profileSnap = await getDoc(doc(db, "users", user.uid))
+        if (profileSnap.exists()) {
+          profile = profileSnap.data() || {}
+        }
+      } catch (err) {
+        console.warn("Could not load user profile for post metadata:", err)
+      }
+
+      const email = String(
+        profile.email || user.email || localStorage.getItem("userEmail") || ""
+      ).trim()
+      const name = String(
+        profile.username ||
+        profile.name ||
+        localStorage.getItem("userName") ||
+        email
+      ).trim()
+      const role = String(
+        profile.role || localStorage.getItem("userRole") || ""
+      ).trim()
+
+      if (!email) return null
+
+      return {
+        uid: user.uid,
+        email,
+        name,
+        role
+      }
+    },
 
     handleImage(e) {
       this.imageFile = e.target.files[0]
@@ -218,6 +280,11 @@ export default {
       }
 
       try {
+        const poster = await this.resolvePosterMeta()
+        if (!poster) {
+          toast.error("Cannot identify poster account. Please login again.")
+          return
+        }
 
         // UPLOAD IMAGE (OPTIONAL)
         if (this.imageFile) {
@@ -241,6 +308,10 @@ export default {
           ...this.job,
           images: [this.job.imageUrl, this.job.imageUrl2].filter(Boolean),
           status: "open",
+          postedByName: poster.name,
+          postedByEmail: poster.email,
+          postedByRole: poster.role,
+          postedByUid: poster.uid,
           createdAt: serverTimestamp()
         })
 
