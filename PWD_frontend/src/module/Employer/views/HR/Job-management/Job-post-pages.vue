@@ -233,6 +233,15 @@ export default {
       const role = String(
         profile.role || localStorage.getItem("userRole") || ""
       ).trim()
+      const companyId = String(
+        profile.companyId || localStorage.getItem("companyId") || ""
+      ).trim()
+      const companyName = String(
+        profile.companyName || localStorage.getItem("companyName") || ""
+      ).trim()
+      const createdByCompanyAdminUid = String(
+        profile.createdByCompanyAdminUid || ""
+      ).trim()
 
       if (!email) return null
 
@@ -240,7 +249,10 @@ export default {
         uid: user.uid,
         email,
         name,
-        role
+        role,
+        companyId,
+        companyName,
+        createdByCompanyAdminUid
       }
     },
 
@@ -312,6 +324,9 @@ export default {
           postedByEmail: poster.email,
           postedByRole: poster.role,
           postedByUid: poster.uid,
+          companyId: poster.companyId || "",
+          companyName: poster.companyName || "",
+          createdByCompanyAdminUid: poster.createdByCompanyAdminUid || "",
           createdAt: serverTimestamp()
         })
 

@@ -1,6 +1,6 @@
 <template>
   <div class="company-layout">
-    <aside class="sidebar" :class="{ open: sidebarOpen }">
+    <aside class="sidebar" :class="{ open: sidebarOpen, collapsed: collapsed }">
       <div class="brand-panel">
         <div class="logo-orb">
           <i class="bi bi-buildings"></i>
@@ -36,7 +36,7 @@
 
     <div class="main-area">
       <header class="topbar">
-        <button class="menu-toggle" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle menu">
+        <button class="menu-toggle" @click="handleToggleSidebar" aria-label="Toggle menu">
           <i class="bi bi-list"></i>
         </button>
         <div class="top-title">
@@ -69,6 +69,7 @@ const route = useRoute()
 const router = useRouter()
 const companyName = ref(localStorage.getItem("companyName") || "My Company")
 const sidebarOpen = ref(false)
+const collapsed = ref(false)
 const now = ref(new Date())
 let timer = null
 
@@ -76,7 +77,7 @@ const pageTitle = computed(() => {
   if (route.path.includes("/add-employee")) return "Add Employee"
   if (route.path.includes("/logs")) return "Logs"
   return "Dashboard"
-})
+})  
 
 const dateLabel = computed(() =>
   now.value.toLocaleString("en-US", {
@@ -93,6 +94,13 @@ onMounted(() => {
   timer = setInterval(() => {
     now.value = new Date()
   }, 1000)
+})
+
+// close overlay when resizing to desktop
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 1024) {
+    sidebarOpen.value = false
+  }
 })
 
 onBeforeUnmount(() => {
@@ -145,6 +153,14 @@ async function logout() {
   localStorage.clear()
   router.push("/login")
 }
+
+function handleToggleSidebar() {
+  if (window.innerWidth <= 1024) {
+    sidebarOpen.value = !sidebarOpen.value
+  } else {
+    collapsed.value = !collapsed.value
+  }
+}
 </script>
 
 <style>
@@ -156,7 +172,8 @@ async function logout() {
   --company-muted: #64748b;
   --company-brand: #0b5fff;
   --company-brand-dark: #0042bd;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   min-height: 100vh;
   background:
     radial-gradient(900px 420px at 8% -8%, #dbeafe 0%, rgba(219, 234, 254, 0) 65%),
@@ -172,10 +189,14 @@ async function logout() {
   display: flex;
   flex-direction: column;
   gap: 22px;
-  position: fixed;
-  inset: 0 auto 0 0;
+  position: relative;
   z-index: 30;
-  box-shadow: 10px 0 40px rgba(2, 6, 23, 0.25);
+  box-shadow: 10px 0 40px rgba(2, 6, 23, 0.12);
+  transition: width 0.28s ease, transform 0.25s ease;
+}
+
+.sidebar.collapsed {
+  width: 80px;
 }
 
 .brand-panel {
@@ -256,7 +277,7 @@ async function logout() {
 }
 
 .main-area {
-  margin-left: 280px;
+  /* Grid places this automatically in column 2 */
   flex: 1;
   min-width: 0;
   display: flex;
@@ -327,9 +348,17 @@ async function logout() {
 }
 
 @media (max-width: 1024px) {
+  .company-layout {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
     transform: translateX(-105%);
     transition: transform 0.25s ease;
+    width: 280px;
+    box-shadow: 10px 0 40px rgba(2, 6, 23, 0.25);
   }
 
   .sidebar.open {

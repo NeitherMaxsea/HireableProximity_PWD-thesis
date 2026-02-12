@@ -278,9 +278,12 @@
 import { auth, db } from "@/firebase"
 import api from "@/services/api"
 import { toast } from "vue3-toastify"
+import { onAuthStateChanged } from "firebase/auth"
 import {
   collection,
   onSnapshot,
+  query,
+  where,
   doc,
   updateDoc,
   deleteDoc,
@@ -296,6 +299,7 @@ export default {
     return {
       jobs: [],
       jobsUnsubscribe: null,
+      scopeReady: false,
       search: "",
       backfilling: false,
       busyJobId: null,
@@ -318,42 +322,8 @@ export default {
     }
   },
 
-  mounted() {
-    this.jobsUnsubscribe = onSnapshot(collection(db, "jobs"), snapshot => {
-      this.jobs = snapshot.docs.map(d => {
-        const raw = d.data()
-        const images = Array.isArray(raw.images) ? raw.images.filter(Boolean) : []
-
-        return {
-          id: d.id,
-          ...raw,
-          imageUrl:
-            raw.imageUrl ||
-            raw.imageURL ||
-            raw.photo1 ||
-            images[0] ||
-            "",
-          imageUrl2:
-            raw.imageUrl2 ||
-            raw.imageURL2 ||
-            raw.photo2 ||
-            images[1] ||
-            ""
-        }
-      }).sort((a, b) => this.getCreatedAtMillis(b.createdAt) - this.getCreatedAtMillis(a.createdAt))
-
-      if (this.showViewModal && this.viewJobData?.id) {
-        const fresh = this.jobs.find((job) => job.id === this.viewJobData.id)
-        this.viewJobData = fresh ? { ...fresh } : {}
-      }
-
-      if (this.showModal && this.editJobData?.id) {
-        const fresh = this.jobs.find((job) => job.id === this.editJobData.id)
-        if (fresh) {
-          this.editJobData = { ...fresh }
-        }
-      }
-    })
+  async mounted() {
+    await this.startJobsSync()
   },
 
   beforeUnmount() {
@@ -364,6 +334,89 @@ export default {
   },
 
   methods: {
+    waitForAuthUser(timeoutMs = 4000) {
+      return new Promise((resolve) => {
+        if (auth.currentUser) {
+          resolve(auth.currentUser)
+          return
+        }
+
+        let settled = false
+        const timer = setTimeout(() => {
+          if (settled) return
+          settled = true
+          unsubscribe()
+          resolve(auth.currentUser || null)
+        }, timeoutMs)
+
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (settled) return
+          settled = true
+          clearTimeout(timer)
+          unsubscribe()
+          resolve(user || null)
+        })
+      })
+    },
+
+    async startJobsSync() {
+      const actor = await this.resolveActorMeta()
+      if (!actor?.uid) {
+        toast.error("Cannot load jobs. Please login again.")
+        return
+      }
+
+      if (typeof this.jobsUnsubscribe === "function") {
+        this.jobsUnsubscribe()
+        this.jobsUnsubscribe = null
+      }
+
+      let jobsRef = collection(db, "jobs")
+      if (actor.companyId) {
+        jobsRef = query(jobsRef, where("companyId", "==", actor.companyId))
+      } else {
+        jobsRef = query(jobsRef, where("postedByUid", "==", actor.uid))
+      }
+
+      this.jobsUnsubscribe = onSnapshot(jobsRef, (snapshot) => {
+        this.jobs = snapshot.docs.map((d) => {
+          const raw = d.data()
+          const images = Array.isArray(raw.images) ? raw.images.filter(Boolean) : []
+
+          return {
+            id: d.id,
+            ...raw,
+            imageUrl:
+              raw.imageUrl ||
+              raw.imageURL ||
+              raw.photo1 ||
+              images[0] ||
+              "",
+            imageUrl2:
+              raw.imageUrl2 ||
+              raw.imageURL2 ||
+              raw.photo2 ||
+              images[1] ||
+              ""
+          }
+        }).sort((a, b) => this.getCreatedAtMillis(b.createdAt) - this.getCreatedAtMillis(a.createdAt))
+
+        if (this.showViewModal && this.viewJobData?.id) {
+          const fresh = this.jobs.find((job) => job.id === this.viewJobData.id)
+          this.viewJobData = fresh ? { ...fresh } : {}
+        }
+
+        if (this.showModal && this.editJobData?.id) {
+          const fresh = this.jobs.find((job) => job.id === this.editJobData.id)
+          if (fresh) {
+            this.editJobData = { ...fresh }
+          }
+        }
+
+        this.scopeReady = true
+      })
+    },
+
     getCreatedAtMillis(ts) {
       if (!ts) return 0
       if (typeof ts?.toMillis === "function") return ts.toMillis()
@@ -373,7 +426,7 @@ export default {
     },
 
     async resolveActorMeta() {
-      const user = auth.currentUser
+      const user = await this.waitForAuthUser()
       if (!user?.uid) return null
 
       let profile = {}
@@ -396,13 +449,17 @@ export default {
         email
       ).trim()
       const role = String(profile.role || localStorage.getItem("userRole") || "").trim()
+      const companyId = String(profile.companyId || localStorage.getItem("companyId") || "").trim()
+      const companyName = String(profile.companyName || localStorage.getItem("companyName") || "").trim()
 
       if (!email) return null
       return {
         uid: user.uid,
         email,
         name,
-        role
+        role,
+        companyId,
+        companyName
       }
     },
 
@@ -436,6 +493,8 @@ export default {
             postedByEmail: actor.email,
             postedByRole: actor.role,
             postedByUid: actor.uid,
+            companyId: actor.companyId || "",
+            companyName: actor.companyName || "",
             legacyAccountBackfilledAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           })

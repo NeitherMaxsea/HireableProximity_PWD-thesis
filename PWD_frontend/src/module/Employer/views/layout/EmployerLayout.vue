@@ -32,7 +32,8 @@ import Navbar from "@/components/nv-employer.vue"
 <style scoped>
 /* ROOT */
 .layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   height: 100vh;
 }
 
@@ -64,6 +65,12 @@ import Navbar from "@/components/nv-employer.vue"
 .page-fade-enter-from,
 .page-fade-leave-to {
   opacity: 0;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 

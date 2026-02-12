@@ -314,6 +314,8 @@ async function createEmployee() {
         forcePasswordChange: true,
         temporaryPasswordIssuedAt: serverTimestamp(),
         createdByCompanyAdminUid: auth.currentUser?.uid || "",
+        createdByCompanyAdminEmail: String(auth.currentUser?.email || localStorage.getItem("userEmail") || ""),
+        createdByCompanyName: companyName.value,
         lastLoginAt: null,
         lastSeenAt: null,
         syncedAt: serverTimestamp(),

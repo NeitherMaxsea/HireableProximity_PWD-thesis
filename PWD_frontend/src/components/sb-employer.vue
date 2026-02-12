@@ -87,43 +87,43 @@
           </div>
         </transition>
 
-        <!-- EMPLOYER RECORDS -->
-        <router-link
-          to="/employer/HR/employer-records"
-          class="nav-link"
-          :class="{ active: route.path.includes('/employer-records') }"
-          @mouseenter="tooltip='Employer Records'"
-          @mouseleave="tooltip=''"
-        >
-          <span class="nav-left">
-            <i class="bi bi-people"></i>
-            <span v-if="!collapsed">Employer Records</span>
-          </span>
-
-          <span v-if="collapsed && tooltip==='Employer Records'" class="tooltip">
-            Employer Records
-          </span>
-        </router-link>
-
-        <!-- ATTENDANCE MANAGEMENT -->
-        <router-link
-          to="/employer/HR/attendance-management"
-          class="nav-link"
-          :class="{ active: route.path.includes('/attendance-management') }"
-          @mouseenter="tooltip='Attendance Management'"
-          @mouseleave="tooltip=''"
-        >
-          <span class="nav-left">
-            <i class="bi bi-calendar-check"></i>
-            <span v-if="!collapsed">Attendance Management</span>
-          </span>
-
-          <span v-if="collapsed && tooltip==='Attendance Management'" class="tooltip">
-            Attendance Management
-          </span>
-        </router-link>
-
       </div>
+
+      <!-- EMPLOYER RECORDS -->
+      <router-link
+        to="/employer/HR/employer-records"
+        class="nav-link"
+        :class="{ active: route.path.includes('/employer-records') }"
+        @mouseenter="tooltip='Employer Records'"
+        @mouseleave="tooltip=''"
+      >
+        <span class="nav-left">
+          <i class="bi bi-people"></i>
+          <span v-if="!collapsed">Employer Records</span>
+        </span>
+
+        <span v-if="collapsed && tooltip==='Employer Records'" class="tooltip">
+          Employer Records
+        </span>
+      </router-link>
+
+      <!-- ATTENDANCE MANAGEMENT -->
+      <router-link
+        to="/employer/HR/attendance-management"
+        class="nav-link"
+        :class="{ active: route.path.includes('/attendance-management') }"
+        @mouseenter="tooltip='Attendance Management'"
+        @mouseleave="tooltip=''"
+      >
+        <span class="nav-left">
+          <i class="bi bi-calendar-check"></i>
+          <span v-if="!collapsed">Attendance Management</span>
+        </span>
+
+        <span v-if="collapsed && tooltip==='Attendance Management'" class="tooltip">
+          Attendance Management
+        </span>
+      </router-link>
 
     </nav>
 
@@ -207,7 +207,7 @@ const userInitial = computed(() => {
   return base ? base[0].toUpperCase() : "U"
 })
 
-const isDark = ref(localStorage.getItem("sidebarDark") === "true")
+const isDark = ref(localStorage.getItem("sidebarDark") !== "false")
 const profileRef = ref(null)
 
 onMounted(() => {
@@ -295,6 +295,7 @@ function goProfile() {
   width: 270px;
   height: 100vh;
   background: #ffffff;
+  color: #1f2937;
   padding: 22px;
   display: flex;
   flex-direction: column;
@@ -438,13 +439,15 @@ function goProfile() {
 
 /* ACTIVE */
 .active {
-  background: #fef3c7;
-  color: #92400e;
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .sidebar-dark .active {
-  background: #334155;
-  color: #fbbf24;
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 /* ICON + TEXT */

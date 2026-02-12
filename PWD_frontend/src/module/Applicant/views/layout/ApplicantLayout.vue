@@ -382,7 +382,8 @@ function isSameDate(a, b) {
 
 <style scoped>
 .layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   min-height: 100vh;
   background: #f5f7fb;
 }
@@ -797,6 +798,12 @@ function isSameDate(a, b) {
 .event-type.followup {
   background: #fef3c7;
   color: #92400e;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sidebar-overlay {
