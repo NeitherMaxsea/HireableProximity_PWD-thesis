@@ -118,25 +118,119 @@
 
     <!-- ABOUT -->
     <section id="about" class="section">
-      <h2>About the Platform</h2>
-
-      <div class="card-grid">
-        <div class="info-card">
-          <i class="bi bi-people-fill info-icon" aria-hidden="true"></i>
-          <h3>Inclusive Hiring</h3>
-          <p>Designed to help PWDs find fair and accessible employment.</p>
+      <div class="about-panel">
+        <div class="about-image-wrap" :class="`dir-${aboutDirection}`">
+          <div
+            class="about-stack about-stack-left"
+          >
+            <transition name="about-stack-slide" mode="out-in">
+              <img
+                :key="`left-${getAboutImageAt(-1)}`"
+                :src="aboutImages[getAboutImageAt(-1)]"
+                alt="Previous about preview"
+                class="about-stack-image"
+              />
+            </transition>
+          </div>
+          <div
+            class="about-stack about-stack-right"
+          >
+            <transition name="about-stack-slide" mode="out-in">
+              <img
+                :key="`right-${getAboutImageAt(1)}`"
+                :src="aboutImages[getAboutImageAt(1)]"
+                alt="Next about preview"
+                class="about-stack-image"
+              />
+            </transition>
+          </div>
+          <div class="about-image-frame">
+            <div
+              class="about-image-stage"
+              :class="`dir-${aboutDirection}`"
+              @touchstart.passive="onAboutTouchStart"
+              @touchend="onAboutTouchEnd"
+            >
+              <transition name="about-image-rotate">
+                <div class="about-photo-card" :key="currentAboutImage">
+                  <img
+                    :src="aboutImages[currentAboutImage]"
+                    alt="About the platform placeholder"
+                    class="about-image"
+                  />
+                </div>
+              </transition>
+            </div>
+            <div class="about-image-controls">
+              <button type="button" class="about-nav-btn" @click="prevAboutImage">
+                ‹
+              </button>
+              <span class="about-image-index">
+                {{ currentAboutImage + 1 }} / {{ aboutImages.length }}
+              </span>
+              <button type="button" class="about-nav-btn" @click="nextAboutImage">
+                ›
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="info-card">
-          <i class="bi bi-graph-up-arrow info-icon" aria-hidden="true"></i>
-          <h3>Decision Support</h3>
-          <p>Helps employers choose the right candidate effectively.</p>
+        <div class="about-copy">
+          <h3>About Us</h3>
+          <p>
+            The Employment Assistance Platform for Persons with Disabilities is
+            designed to connect qualified PWD job seekers with inclusive
+            employers in the City of Dasmarinas.
+          </p>
+          <p>
+            With built-in decision support, the system helps make hiring more
+            accessible, fair, and data-guided for both applicants and
+            organizations.
+          </p>
+          <p>
+            Employers can post opportunities with clear accessibility details,
+            while applicants receive role recommendations aligned with their
+            capabilities, preferences, and qualifications.
+          </p>
+          <p>
+            This approach supports inclusive growth by improving visibility of
+            PWD talent, reducing hiring barriers, and creating a more connected
+            local employment ecosystem.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TUTORIAL -->
+    <section id="tutorial" class="tutorial-section">
+      <div class="tutorial-card">
+        <div class="video-pane">
+          <div class="video-placeholder">
+            <span class="video-label">Video Tutorial Placeholder</span>
+            <a href="#" class="video-link" @click.prevent>
+              Add tutorial video link
+            </a>
+          </div>
         </div>
 
-        <div class="info-card">
-          <i class="bi bi-geo-alt-fill info-icon" aria-hidden="true"></i>
-          <h3>Community Focus</h3>
-          <p>Built specifically for the City of Dasmarinas.</p>
+        <div class="tutorial-pane">
+          <div class="tutorial-header">
+            <span class="faq-badge">Quick Guide</span>
+            <h2>Tutorial Section</h2>
+            <p>Step-by-step guides for applicants and employers.</p>
+          </div>
+
+          <div
+            v-for="(item, index) in tutorials"
+            :key="item.q"
+            class="tutorial-step"
+          >
+            <span class="step-dot">{{ index + 1 }}</span>
+            <div>
+              <h3>{{ item.q }}</h3>
+              <p>{{ item.a }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -253,6 +347,15 @@ export default {
       hideNav: false,
       isScrolled: false,
       activeFaq: null,
+      currentAboutImage: 0,
+      aboutDirection: "next",
+      aboutTouchStartX: null,
+      aboutTouchStartY: null,
+      aboutImages: [
+        "https://placehold.co/640x420/e5e7eb/334155?text=About+Image+1",
+        "https://placehold.co/640x420/dbeafe/1e3a8a?text=About+Image+2",
+        "https://placehold.co/640x420/fee2e2/7f1d1d?text=About+Image+3"
+      ],
 
       navItems: [
         { id: "home", label: "Home" },
@@ -275,7 +378,30 @@ export default {
         { id: "contact", label: "Contact" }
       ],
 
-     faqs: [
+      tutorials: [
+        {
+          q: "How do I register as a PWD job seeker?",
+          a: "Open the Register page, choose the PWD applicant option, complete your personal details, upload required information, then submit your account for verification."
+        },
+        {
+          q: "How do I register as an employer?",
+          a: "Select employer registration, provide company information, add your contact details, then wait for admin approval before posting job openings."
+        },
+        {
+          q: "How do I log in and update my profile?",
+          a: "Use your registered email and password on the Login page. After logging in, open your profile settings to update contact info, skills, and work preferences."
+        },
+        {
+          q: "How do I apply for a job listing?",
+          a: "Go to Find Jobs, review job requirements and accessibility details, then click Apply. Keep your resume and profile updated to improve your match results."
+        },
+        {
+          q: "How do employers review and shortlist applicants?",
+          a: "Employers can open posted jobs, check candidate profiles, and use decision support recommendations to shortlist applicants based on role fit."
+        }
+      ],
+
+      faqs: [
   {
     q: "What is this system all about?",
     a: "This system is a web-based job employment assistance platform developed to help Persons with Disabilities (PWDs) find suitable and inclusive employment opportunities in the City of Dasmarinas using a Decision Support System."
@@ -312,6 +438,50 @@ beforeUnmount() {
 },
 
 methods: {
+onAboutTouchStart(e) {
+  const touch = e.touches?.[0];
+  if (!touch) return;
+  this.aboutTouchStartX = touch.clientX;
+  this.aboutTouchStartY = touch.clientY;
+},
+
+onAboutTouchEnd(e) {
+  const touch = e.changedTouches?.[0];
+  if (!touch || this.aboutTouchStartX === null || this.aboutTouchStartY === null) return;
+
+  const dx = touch.clientX - this.aboutTouchStartX;
+  const dy = touch.clientY - this.aboutTouchStartY;
+  const threshold = 45;
+
+  if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy)) {
+    if (dx < 0) {
+      this.nextAboutImage();
+    } else {
+      this.prevAboutImage();
+    }
+  }
+
+  this.aboutTouchStartX = null;
+  this.aboutTouchStartY = null;
+},
+
+prevAboutImage() {
+  this.aboutDirection = "prev";
+  const total = this.aboutImages.length;
+  this.currentAboutImage = (this.currentAboutImage - 1 + total) % total;
+},
+
+nextAboutImage() {
+  this.aboutDirection = "next";
+  const total = this.aboutImages.length;
+  this.currentAboutImage = (this.currentAboutImage + 1) % total;
+},
+
+getAboutImageAt(offset) {
+  const total = this.aboutImages.length;
+  return (this.currentAboutImage + offset + total) % total;
+},
+
 toggleFaq(i) {
   if (this.activeFaq === i) {
     // Start the closing animation transition first
@@ -709,43 +879,231 @@ h2{
   color:#111;
 }
 
-/* CARD GRID */
-.card-grid{
+/* ABOUT PANEL */
+.about-panel{
+  width:100%;
+  max-width:none;
+  margin:0;
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(250px,1fr));
-  gap:30px;
-  max-width:1100px;
-  margin:auto;
+  grid-template-columns:50% 50%;
+  gap:0;
+  padding:0;
+  border:1px solid #d1d5db;
+  border-radius:14px;
+  background:#f9fafb;
+  overflow:hidden;
+  min-height:360px;
 }
 
-/* INFO CARD */
-.info-card,
-.job-card{
+.about-image-wrap{
+  position:relative;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+  min-height:100%;
+  background:#f1f5f9;
+  padding:34px;
+  display:grid;
+  place-items:center;
+}
+
+.about-stack{
+  position:absolute;
+  width:min(85%, 460px);
+  aspect-ratio:3/4;
+  border-radius:10px;
+  box-shadow:0 16px 30px rgba(15, 23, 42, 0.14);
+  z-index:1;
+  overflow:hidden;
+}
+
+.about-stack::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(255, 255, 255, 0.3);
+  pointer-events:none;
+}
+
+.about-stack-image{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.about-stack-slide-enter-active,
+.about-stack-slide-leave-active{
+  transition:transform .38s cubic-bezier(.22,.61,.36,1), opacity .38s ease;
+}
+
+.about-image-wrap.dir-next .about-stack-slide-enter-from{
+  opacity:.55;
+  transform:translateX(16px) scale(.97);
+}
+
+.about-image-wrap.dir-next .about-stack-slide-leave-to{
+  opacity:.35;
+  transform:translateX(-16px) scale(.96);
+}
+
+.about-image-wrap.dir-prev .about-stack-slide-enter-from{
+  opacity:.55;
+  transform:translateX(-16px) scale(.97);
+}
+
+.about-image-wrap.dir-prev .about-stack-slide-leave-to{
+  opacity:.35;
+  transform:translateX(16px) scale(.96);
+}
+
+.about-stack-left{
+  transform:rotate(-7deg);
+  left:12%;
+}
+
+.about-stack-right{
+  transform:rotate(7deg);
+  right:12%;
+}
+
+.about-image-frame{
+  position:relative;
+  width:min(86%, 470px);
+  aspect-ratio:3/4;
+  border-radius:10px;
+  box-shadow:0 22px 34px rgba(15, 23, 42, 0.2);
+  z-index:2;
+}
+
+.about-photo-card{
+  position:absolute;
+  inset:0;
   background:#fff;
-  padding:30px;
-  border-radius:16px;
-  box-shadow:0 10px 25px rgba(0,0,0,.06);
-  transition:.3s;
+  border:1px solid #e2e8f0;
+  border-radius:8px;
+  padding:12px;
+  box-sizing:border-box;
+  will-change:transform, opacity;
+}
+
+.about-image{
+  position:relative;
+  width:100%;
+  height:100%;
+  border-radius:4px;
+  display:block;
+  object-fit:cover;
+}
+
+.about-image-stage{
+  position:relative;
+  height:calc(100% - 52px);
+  border-radius:4px;
+  overflow:hidden;
+  touch-action:pan-y;
+}
+
+.about-image-rotate-enter-active,
+.about-image-rotate-leave-active{
+  transition:transform .45s cubic-bezier(.22,.61,.36,1), opacity .45s ease;
+}
+
+.about-image-stage.dir-next .about-image-rotate-enter-from{
+  opacity:0.6;
+  transform:translate(44px, 14px) rotate(8deg) scale(0.96);
+}
+
+.about-image-stage.dir-next .about-image-rotate-leave-to{
+  opacity:0.45;
+  transform:translate(-52px, -16px) rotate(-10deg) scale(0.94);
+}
+
+.about-image-stage.dir-prev .about-image-rotate-enter-from{
+  opacity:0.6;
+  transform:translate(-44px, 14px) rotate(-8deg) scale(0.96);
+}
+
+.about-image-stage.dir-prev .about-image-rotate-leave-to{
+  opacity:0.45;
+  transform:translate(52px, -16px) rotate(10deg) scale(0.94);
+}
+
+.about-image-controls{
+  height:52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  color:#334155;
+}
+
+.about-nav-btn{
+  width:32px;
+  height:32px;
+  border:1px solid #cbd5e1;
+  border-radius:999px;
+  background:#fff;
+  color:#0f172a;
+  font-size:24px;
+  line-height:1;
+  display:grid;
+  place-items:center;
   cursor:pointer;
 }
 
-.info-card:hover,
-.job-card:hover{
-  transform:translateY(-8px);
-  box-shadow:0 20px 40px rgba(0,0,0,.12);
+.about-nav-btn:hover{
+  border-color:#93c5fd;
+  background:#eff6ff;
 }
 
-.info-card h3,
-.job-card h3{
-  margin-bottom:10px;
-  color:#0d6efd;
+.about-image-index{
+  font-weight:700;
+  font-size:14px;
+  min-width:56px;
+  text-align:center;
 }
 
-.info-icon{
-  font-size:28px;
-  color:#0d6efd;
-  display:inline-flex;
-  margin-bottom:12px;
+.about-copy{
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:14px;
+  padding:32px;
+  box-sizing:border-box;
+}
+
+.about-copy h3{
+  margin:0;
+  font-size:2rem;
+  color:#111827;
+}
+
+.about-copy p{
+  margin:0;
+  color:#374151;
+  line-height:1.7;
+}
+
+@media (max-width: 900px){
+  .about-panel{
+    grid-template-columns:1fr;
+    min-height:auto;
+  }
+
+  .about-image-wrap{
+    min-height:420px;
+    padding:24px 18px;
+  }
+
+  .about-stack-left{
+    left:8%;
+  }
+
+  .about-stack-right{
+    right:8%;
+  }
 }
 
 /* MISSION */
@@ -1000,6 +1358,133 @@ h2{
 
 
 
+
+.tutorial-section{
+  padding:90px 6%;
+  background:#f8fafc;
+}
+
+.tutorial-card{
+  width:100%;
+  background:#ffffff;
+  border:1px solid #d1d5db;
+  border-radius:14px;
+  display:grid;
+  grid-template-columns:50% 50%;
+  overflow:hidden;
+  min-height:420px;
+}
+
+.video-pane{
+  padding:24px;
+  border-right:1px solid #e5e7eb;
+  background:#f3f4f6;
+}
+
+.video-placeholder{
+  width:100%;
+  height:360px;
+  min-height:360px;
+  max-height:360px;
+  border-radius:10px;
+  border:4px solid #111827;
+  background:linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+}
+
+.video-label{
+  color:#1f2937;
+  font-weight:700;
+  font-size:1.05rem;
+}
+
+.video-link{
+  display:inline-flex;
+  padding:10px 16px;
+  border-radius:8px;
+  text-decoration:none;
+  background:#0d6efd;
+  color:#fff;
+  font-weight:600;
+}
+
+.tutorial-pane{
+  padding:26px 24px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:10px;
+}
+
+.tutorial-header{
+  text-align:left;
+  margin-bottom:8px;
+}
+
+.tutorial-header h2{
+  font-size:2rem;
+  margin:14px 0 8px;
+}
+
+.tutorial-header p{
+  margin:0;
+  color:#64748b;
+}
+
+.tutorial-step{
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  background:#fff;
+  padding:14px;
+  display:grid;
+  grid-template-columns:32px 1fr;
+  gap:12px;
+  align-items:flex-start;
+}
+
+.step-dot{
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  font-weight:700;
+  color:#1e3a8a;
+  background:#dbeafe;
+}
+
+.tutorial-step h3{
+  margin:0;
+  font-size:1rem;
+  color:#111827;
+}
+
+.tutorial-step p{
+  margin:6px 0 0;
+  color:#4b5563;
+  line-height:1.55;
+}
+
+@media (max-width: 1024px){
+  .tutorial-card{
+    grid-template-columns:1fr;
+  }
+
+  .video-pane{
+    border-right:0;
+    border-bottom:1px solid #e5e7eb;
+  }
+
+  .video-placeholder{
+    height:260px;
+    min-height:260px;
+    max-height:260px;
+  }
+}
 
 .faq-section{
   padding:140px 200px;
