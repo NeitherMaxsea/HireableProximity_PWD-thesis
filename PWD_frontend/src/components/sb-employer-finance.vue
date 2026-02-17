@@ -15,101 +15,31 @@
 
     <nav class="nav">
       <router-link
-        to="/employer/operation/dashboard"
+        to="/employer/finance/dashboard"
         class="nav-link"
-        :class="{ active: route.path.includes('/employer/operation/dashboard') }"
-        @mouseenter="tooltip = 'Operations Dashboard'"
+        :class="{ active: route.path.includes('/employer/finance/dashboard') }"
+        @mouseenter="tooltip = 'Finance Dashboard'"
         @mouseleave="tooltip = ''"
       >
         <span class="nav-left">
           <i class="bi bi-speedometer2"></i>
-          <span v-if="!collapsed">Operations Dashboard</span>
+          <span v-if="!collapsed">Finance Dashboard</span>
         </span>
-        <span v-if="collapsed && tooltip === 'Operations Dashboard'" class="tooltip">Operations Dashboard</span>
+        <span v-if="collapsed && tooltip === 'Finance Dashboard'" class="tooltip">Finance Dashboard</span>
       </router-link>
 
       <router-link
-        to="/employer/operation/assignment-management"
+        to="/employer/finance/job-approval"
         class="nav-link"
-        :class="{ active: route.path.includes('/employer/operation/assignment-management') }"
-        @mouseenter="tooltip = 'Assignment Management'"
+        :class="{ active: route.path.includes('/employer/finance/job-approval') }"
+        @mouseenter="tooltip = 'Job Post Approval'"
         @mouseleave="tooltip = ''"
       >
         <span class="nav-left">
-          <i class="bi bi-diagram-3"></i>
-          <span v-if="!collapsed">Assignment Management</span>
+          <i class="bi bi-check2-square"></i>
+          <span v-if="!collapsed">Job Post Approval</span>
         </span>
-        <span v-if="collapsed && tooltip === 'Assignment Management'" class="tooltip">Assignment Management</span>
-      </router-link>
-
-      <router-link
-        to="/employer/operation/deployment-scheduling"
-        class="nav-link"
-        :class="{ active: route.path.includes('/employer/operation/deployment-scheduling') }"
-        @mouseenter="tooltip = 'Deployment Scheduling'"
-        @mouseleave="tooltip = ''"
-      >
-        <span class="nav-left">
-          <i class="bi bi-calendar-check"></i>
-          <span v-if="!collapsed">Deployment Scheduling</span>
-        </span>
-        <span v-if="collapsed && tooltip === 'Deployment Scheduling'" class="tooltip">Deployment Scheduling</span>
-      </router-link>
-
-      <router-link
-        to="/employer/operation/training-management"
-        class="nav-link"
-        :class="{ active: route.path.includes('/employer/operation/training-management') }"
-        @mouseenter="tooltip = 'Training Management'"
-        @mouseleave="tooltip = ''"
-      >
-        <span class="nav-left">
-          <i class="bi bi-mortarboard"></i>
-          <span v-if="!collapsed">Training Management</span>
-        </span>
-        <span v-if="collapsed && tooltip === 'Training Management'" class="tooltip">Training Management</span>
-      </router-link>
-
-      <router-link
-        to="/employer/operation/training-progress"
-        class="nav-link"
-        :class="{ active: route.path.includes('/employer/operation/training-progress') }"
-        @mouseenter="tooltip = 'Training Progress'"
-        @mouseleave="tooltip = ''"
-      >
-        <span class="nav-left">
-          <i class="bi bi-graph-up-arrow"></i>
-          <span v-if="!collapsed">Training Progress</span>
-        </span>
-        <span v-if="collapsed && tooltip === 'Training Progress'" class="tooltip">Training Progress</span>
-      </router-link>
-
-      <router-link
-        to="/employer/operation/work-assignment"
-        class="nav-link"
-        :class="{ active: route.path.includes('/employer/operation/work-assignment') }"
-        @mouseenter="tooltip = 'Work Assignment'"
-        @mouseleave="tooltip = ''"
-      >
-        <span class="nav-left">
-          <i class="bi bi-kanban"></i>
-          <span v-if="!collapsed">Work Assignment</span>
-        </span>
-        <span v-if="collapsed && tooltip === 'Work Assignment'" class="tooltip">Work Assignment</span>
-      </router-link>
-
-      <router-link
-        to="/employer/operation/reports-analytics"
-        class="nav-link"
-        :class="{ active: route.path.includes('/employer/operation/reports-analytics') }"
-        @mouseenter="tooltip = 'Reports & Analytics'"
-        @mouseleave="tooltip = ''"
-      >
-        <span class="nav-left">
-          <i class="bi bi-bar-chart-line"></i>
-          <span v-if="!collapsed">Reports & Analytics</span>
-        </span>
-        <span v-if="collapsed && tooltip === 'Reports & Analytics'" class="tooltip">Reports & Analytics</span>
+        <span v-if="collapsed && tooltip === 'Job Post Approval'" class="tooltip">Job Post Approval</span>
       </router-link>
     </nav>
 
@@ -247,7 +177,7 @@ async function logout() {
 
 function goProfile() {
   showMenu.value = false
-  router.push("/employer/operation/employee-profile")
+  router.push("/employer/finance/dashboard")
 }
 </script>
 
@@ -265,12 +195,6 @@ function goProfile() {
   box-sizing: border-box;
   will-change: width, padding;
   transition:
-    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    padding 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sidebar {
-  transition:
     width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
     padding 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -284,37 +208,16 @@ function goProfile() {
 }
 
 .sidebar .nav-left span,
-.sidebar .profile-text,
-.sidebar .nav-child {
+.sidebar .profile-text {
   opacity: 1;
   transform: translateX(0);
 }
 
 .sidebar.collapsed .nav-left span,
-.sidebar.collapsed .profile-text,
-.sidebar.collapsed .nav-child {
+.sidebar.collapsed .profile-text {
   opacity: 0;
   transform: translateX(-12px);
   pointer-events: none;
-}
-
-.sidebar.collapsed .nav-left {
-  justify-content: center;
-}
-
-.profile {
-  height: 48px;
-}
-
-.slide-enter-active,
-.fade-enter-active {
-  transition: all 0.25s ease;
-}
-
-.slide-enter-from,
-.fade-enter-from {
-  opacity: 0;
-  transform: translateY(6px);
 }
 
 .sidebar-dark {
@@ -336,26 +239,11 @@ function goProfile() {
   width: 42px;
 }
 
-.sidebar * {
-  transition:
-    background-color 0.35s ease,
-    color 0.35s ease,
-    border-color 0.35s ease;
-}
-
 .brand {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 30px;
-}
-
-.logo {
-  width: 80px;
-}
-
-.sidebar.collapsed .logo {
-  display: none;
 }
 
 .collapse-btn {
@@ -378,8 +266,7 @@ function goProfile() {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.nav-link,
-.nav-parent {
+.nav-link {
   position: relative;
   display: flex;
   justify-content: space-between;
@@ -393,13 +280,14 @@ function goProfile() {
 }
 
 .active {
-  background: #fef3c7;
-  color: #92400e;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 600;
 }
 
 .sidebar-dark .active {
-  background: #334155;
-  color: #fbbf24;
+  background: #14532d;
+  color: #dcfce7;
 }
 
 .nav-left {
@@ -408,20 +296,15 @@ function goProfile() {
   align-items: center;
 }
 
-.nav-link:hover,
-.nav-parent:hover,
-.nav-child:hover {
+.nav-link:hover {
   background: #f3f4f6;
 }
 
-.sidebar-dark .nav-link:hover,
-.sidebar-dark .nav-parent:hover,
-.sidebar-dark .nav-child:hover {
+.sidebar-dark .nav-link:hover {
   background: #1e293b;
 }
 
 .sidebar.collapsed .nav-link,
-.sidebar.collapsed .nav-parent,
 .sidebar.collapsed .profile {
   justify-content: center;
 }
@@ -459,6 +342,7 @@ function goProfile() {
   cursor: pointer;
   max-width: 100%;
   overflow: hidden;
+  height: 48px;
 }
 
 .profile:hover {
@@ -474,19 +358,12 @@ function goProfile() {
   height: 36px;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: #f59e0b;
+  background: #16a34a;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   flex-shrink: 0;
-}
-
-.profile-text {
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease,
-    width 0.25s ease;
 }
 
 .profile-text .name,
@@ -565,25 +442,12 @@ function goProfile() {
   color: #dc2626;
 }
 
-.slide-enter-active,
 .fade-enter-active {
   transition: all 0.25s ease;
 }
 
-.slide-enter-from,
 .fade-enter-from {
   opacity: 0;
   transform: translateY(6px);
 }
-
-.profile {
-  height: 48px;
-}
-
-.sidebar.collapsed .profile {
-  justify-content: center;
-}
 </style>
-
-
-

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('image_url')->nullable();
             $table->string('image_url2')->nullable();
             $table->json('images')->nullable();
-            $table->string('status', 50)->default('open');
+            $table->string('status', 50)->default('pending');
             $table->string('posted_by_name')->nullable();
             $table->string('posted_by_email')->nullable();
             $table->string('posted_by_role')->nullable();

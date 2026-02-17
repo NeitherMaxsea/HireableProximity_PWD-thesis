@@ -311,12 +311,16 @@ function goProfile() {
 /* SIDEBAR BASE */
 .sidebar {
   width: 270px;
-  height: 100vh;
+  height: 100%;
+  max-height: 100%;
   background: #ffffff;
   color: #1f2937;
   padding: 22px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  overflow-x: hidden;
+  box-sizing: border-box;
   will-change: width, padding;
   transition:
     width 0.5s cubic-bezier(0.22, 1, 0.36, 1),

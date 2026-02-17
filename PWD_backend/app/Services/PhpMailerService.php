@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use PHPMailer\PHPMailer\PHPMailer;
+use RuntimeException;
 
 class PhpMailerService
 {
@@ -11,11 +12,22 @@ class PhpMailerService
     {
         $mail = new PHPMailer(true);
         $mail->isSMTP();
-        $mail->Host = (string) env('MAIL_HOST', '127.0.0.1');
+        $host = trim((string) env('MAIL_HOST', '127.0.0.1'));
+        $mail->Host = $host;
         $mail->Port = (int) env('MAIL_PORT', 1025);
-        $username = (string) env('MAIL_USERNAME', '');
-        $password = (string) env('MAIL_PASSWORD', '');
-        $mail->SMTPAuth = $username !== '';
+        $username = trim((string) env('MAIL_USERNAME', ''));
+        $password = trim((string) env('MAIL_PASSWORD', ''));
+
+        if (strcasecmp($host, 'smtp.sendgrid.net') === 0) {
+            if ($username === '') {
+                $username = 'apikey';
+            }
+            if ($password === '') {
+                $password = trim((string) env('SENDGRID_API_KEY', ''));
+            }
+        }
+
+        $mail->SMTPAuth = $username !== '' && $password !== '';
         $mail->Username = $username;
         $mail->Password = $password;
 
@@ -31,6 +43,10 @@ class PhpMailerService
             (string) env('MAIL_FROM_ADDRESS', 'no-reply@example.com'),
             (string) env('MAIL_FROM_NAME', 'PWD Portal')
         );
+
+        if (strcasecmp($host, 'smtp.sendgrid.net') === 0 && !$mail->SMTPAuth) {
+            throw new RuntimeException('SendGrid SMTP credentials are missing. Set MAIL_PASSWORD or SENDGRID_API_KEY.');
+        }
 
         return $mail;
     }

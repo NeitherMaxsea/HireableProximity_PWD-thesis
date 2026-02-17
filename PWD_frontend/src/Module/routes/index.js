@@ -24,6 +24,8 @@ import EmployerDashboard from "@/Module/Employer/views/HR/dashboard.vue"
 import Applicant from "@/Module/Employer/views/HR/Applicant.vue"
 import EmployeeRecord from "@/Module/Employer/views/HR/EmployeeRecord.vue"
 import EmployerProfile from "@/Module/Employer/views/HR/Profile.vue"
+import EmployerJobPost from "@/Module/Employer/views/HR/Job-management/Job-post-pages.vue"
+import EmployerJobList from "@/Module/Employer/views/HR/Job-management/Job-list_pages.vue"
 
 // EMPLOYER OPERATIONS
 import OperationsDashboard from "@/Module/Employer/views/Operation/OperationsDashboard.vue"
@@ -35,6 +37,7 @@ import WorkAssignment from "@/Module/Employer/views/Operation/WorkAssignment.vue
 import ReportsAnalytics from "@/Module/Employer/views/Operation/ReportsAnalytics.vue"
 import EmployeeOperationsProfile from "@/Module/Employer/views/Operation/EmployeeProfile.vue"
 import FinanceDashboard from "@/Module/Employer/views/Finance/FinanceDashboard.vue"
+import FinanceJobApproval from "@/Module/Employer/views/Finance/JobApproval.vue"
 
 // COMPANY ADMIN
 import CompanyAdminLayout from "@/Module/CompanyAdmin/layout/CompanyAdminLayout.vue"
@@ -66,7 +69,9 @@ function getHomeRouteByRole(role, fromRoute = null) {
   if (role === "applicant") return { path: "/applicant/job_list" }
   if (role === "admin") return { path: "/admin/dashboard" }
   if (role === "company_admin") return { path: "/company-admin/dashboard" }
-  if (role === "employer") return { path: "/employer/HR/dashboard" }
+  if (role === "employer" || role === "hr") return { path: "/employer/HR/dashboard" }
+  if (role === "operation") return { path: "/employer/operation/dashboard" }
+  if (role === "finance") return { path: "/employer/finance/dashboard" }
 
   // If role is missing/unknown but user came from an authenticated route,
   // keep them inside the protected area instead of sending to landing page.
@@ -183,7 +188,7 @@ const routes = [
   {
     path: "/employer/HR",
     component: EmployerLayout,
-    meta: { requiresAuth: true, requiredRole: "employer" },
+    meta: { requiresAuth: true, requiredRole: ["employer", "hr"] },
     children: [
       {
         path: "dashboard",
@@ -192,7 +197,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Employer Dashboard",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "hr"],
         },
       },
       {
@@ -202,7 +207,27 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Applicant Lists",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "hr"],
+        },
+      },
+      {
+        path: "job-management/job-post",
+        name: "EmployerJobPost",
+        component: EmployerJobPost,
+        meta: {
+          title: "PWD Job Portal | Job Post",
+          requiresAuth: true,
+          requiredRole: ["employer", "hr"],
+        },
+      },
+      {
+        path: "job-management/job-list",
+        name: "EmployerJobList",
+        component: EmployerJobList,
+        meta: {
+          title: "PWD Job Portal | Job List",
+          requiresAuth: true,
+          requiredRole: ["employer", "hr"],
         },
       },
       {
@@ -212,7 +237,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Employee Records",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "hr"],
         },
       },
       {
@@ -222,7 +247,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Employer Profile",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "hr"],
         },
       },
     ],
@@ -231,7 +256,7 @@ const routes = [
   // ================= EMPLOYER OPERATIONS =================
   {
     path: "/employer/operation",
-    meta: { requiresAuth: true, requiredRole: "employer" },
+    meta: { requiresAuth: true, requiredRole: ["employer", "operation"] },
     children: [
       {
         path: "dashboard",
@@ -240,7 +265,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Operations Dashboard",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
       {
@@ -250,7 +275,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Assignment Management",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
       {
@@ -260,7 +285,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Deployment Scheduling",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
       {
@@ -270,7 +295,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Training Management",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
       {
@@ -280,7 +305,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Training Progress",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
       {
@@ -290,7 +315,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Work Assignment",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
       {
@@ -300,7 +325,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Reports & Analytics",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
       {
@@ -310,7 +335,7 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Employee Profile",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "operation"],
         },
       },
     ],
@@ -319,7 +344,8 @@ const routes = [
   // ================= EMPLOYER FINANCE =================
   {
     path: "/employer/finance",
-    meta: { requiresAuth: true, requiredRole: "employer" },
+    component: EmployerLayout,
+    meta: { requiresAuth: true, requiredRole: ["employer", "finance"] },
     children: [
       {
         path: "dashboard",
@@ -328,7 +354,17 @@ const routes = [
         meta: {
           title: "PWD Job Portal | Finance Dashboard",
           requiresAuth: true,
-          requiredRole: "employer",
+          requiredRole: ["employer", "finance"],
+        },
+      },
+      {
+        path: "job-approval",
+        name: "FinanceJobApproval",
+        component: FinanceJobApproval,
+        meta: {
+          title: "PWD Job Portal | Finance Job Post Approval",
+          requiresAuth: true,
+          requiredRole: ["employer", "finance"],
         },
       },
     ],
@@ -440,7 +476,7 @@ router.beforeEach((to, from, next) => {
         (!Array.isArray(requiredRole) && userRole !== requiredRole))
     ) {
       // User logged in but doesn't have required role
-      next({ name: "LandingPage" })
+      next(getHomeRouteByRole(userRole, from))
     } else {
       // User is authenticated and has required role
       next()

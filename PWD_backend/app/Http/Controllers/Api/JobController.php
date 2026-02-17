@@ -90,7 +90,7 @@ class JobController extends Controller
             'image_url' => $payload['imageUrl'] ?? null,
             'image_url2' => $payload['imageUrl2'] ?? null,
             'images' => isset($payload['images']) ? json_encode($payload['images']) : null,
-            'status' => $payload['status'] ?? 'open',
+            'status' => $payload['status'] ?? 'pending',
             'posted_by_name' => $payload['postedByName'] ?? null,
             'posted_by_email' => $payload['postedByEmail'] ?? null,
             'posted_by_role' => $payload['postedByRole'] ?? null,

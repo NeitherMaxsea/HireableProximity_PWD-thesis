@@ -56,14 +56,15 @@
                   </td>
 
                   <td>
-                    <span class="badge" :class="statusClass(employee.status)">
-                      {{ employee.statusLabel }}
-                    </span><br>
                     <small>{{ employee.applicationDateLabel }}</small>
                   </td>
 
                   <td>{{ employee.gender }}</td>
-                  <td>{{ employee.civilStatus }}</td>
+                  <td>
+                    <span class="badge" :class="statusClass(employee.status)">
+                      {{ employee.statusLabel }}
+                    </span>
+                  </td>
 
                   <td>
                     {{ employee.position }}<br>

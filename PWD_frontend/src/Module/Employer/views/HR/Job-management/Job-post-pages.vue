@@ -152,7 +152,27 @@ import { auth, db } from "@/lib/client-platform"
 import { onAuthStateChanged } from "@/lib/session-auth"
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "@/lib/laravel-data"
 import api from "@/services/api"
-import { toast } from "vue3-toastify"
+import Toastify from "toastify-js"
+import "toastify-js/src/toastify.css"
+
+const toast = {
+  success(text) { showToast(text, "#166534") },
+  error(text) { showToast(text, "#991b1b") },
+  warning(text) { showToast(text, "#92400e") },
+  info(text) { showToast(text, "#1d4ed8") }
+}
+
+function showToast(text, background) {
+  Toastify({
+    text,
+    gravity: "top",
+    position: "right",
+    duration: 3000,
+    close: true,
+    stopOnFocus: true,
+    style: { background }
+  }).showToast()
+}
 
 export default {
   name: "JobPost",
@@ -209,11 +229,12 @@ export default {
 
     async resolvePosterMeta() {
       const user = await this.waitForAuthUser()
-      if (!user?.uid) return null
+      const uid = String(user?.uid || localStorage.getItem("uid") || localStorage.getItem("userUid") || "").trim()
+      if (!uid) return null
 
       let profile = {}
       try {
-        const profileSnap = await getDoc(doc(db, "users", user.uid))
+        const profileSnap = await getDoc(doc(db, "users", uid))
         if (profileSnap.exists()) {
           profile = profileSnap.data() || {}
         }
@@ -222,7 +243,7 @@ export default {
       }
 
       const email = String(
-        profile.email || user.email || localStorage.getItem("userEmail") || ""
+        profile.email || user?.email || localStorage.getItem("userEmail") || ""
       ).trim()
       const name = String(
         profile.username ||
@@ -243,10 +264,8 @@ export default {
         profile.createdByCompanyAdminUid || ""
       ).trim()
 
-      if (!email) return null
-
       return {
-        uid: user.uid,
+        uid,
         email,
         name,
         role,
@@ -318,7 +337,7 @@ export default {
         await addDoc(collection(db, "jobs"), {
           ...this.job,
           images: [this.job.imageUrl, this.job.imageUrl2].filter(Boolean),
-          status: "open",
+          status: "pending",
           postedByName: poster.name,
           postedByEmail: poster.email,
           postedByRole: poster.role,
@@ -329,7 +348,7 @@ export default {
           createdAt: serverTimestamp()
         })
 
-        toast.success("Job posted successfully!")
+        toast.success("Job submitted for finance approval.")
 
         // RESET FORM
         Object.keys(this.job).forEach(k => this.job[k] = "")
@@ -341,7 +360,7 @@ export default {
 
       } catch (err) {
         console.error(err)
-        toast.error("Failed to post job")
+        toast.error(err?.response?.data?.message || err?.message || "Failed to post job")
       }
     }
   }
@@ -405,19 +424,19 @@ export default {
 /* ROOT */
 .app {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100%;
   background: #f5f7fb;
 }
 
 .main-wrapper {
   flex: 1;
+  min-width: 0;
 }
 
 main {
   flex: 1;
   display: flex;
-  overflow: hidden;
+  min-width: 0;
 }
 
 .content {
@@ -426,7 +445,6 @@ main {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow-y: auto;
 }
 
 /* CARD */

@@ -219,6 +219,12 @@ function finishLogin(data, normalizedEmail, acceptedSessionKey = "") {
     router.replace("/admin/dashboard")
   } else if (role === "company_admin") {
     router.replace("/company-admin/dashboard")
+  } else if (role === "operation") {
+    router.replace("/employer/operation/dashboard")
+  } else if (role === "finance") {
+    router.replace("/employer/finance/dashboard")
+  } else if (role === "hr" || role === "employer") {
+    router.replace("/employer/HR/dashboard")
   } else {
     router.replace("/landingpage")
   }

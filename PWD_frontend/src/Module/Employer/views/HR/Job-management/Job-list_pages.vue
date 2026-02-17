@@ -53,9 +53,9 @@
 
                 <span
                   class="badge"
-                  :class="job.status === 'open' ? 'open' : 'closed'"
+                  :class="statusClass(job.status)"
                 >
-                  {{ job.status }}
+                  {{ displayStatus(job.status) }}
                 </span>
               </div>
 
@@ -75,7 +75,7 @@
                   </button>
 
                   <button
-                    v-if="job.status === 'open'"
+                    v-if="isOpen(job.status)"
                     class="close"
                     type="button"
                     :disabled="busyJobId === job.id"
@@ -85,7 +85,7 @@
                   </button>
 
                   <button
-                    v-else
+                    v-else-if="isClosed(job.status)"
                     class="reopen"
                     type="button"
                     :disabled="busyJobId === job.id"
@@ -93,6 +93,18 @@
                   >
                     Reopen
                   </button>
+
+                  <span v-else-if="isPending(job.status)" class="action-note pending-note">
+                    Waiting for finance approval
+                  </span>
+
+                  <span v-else-if="isOnHold(job.status)" class="action-note hold-note">
+                    On hold by finance
+                  </span>
+
+                  <span v-else-if="isRejected(job.status)" class="action-note rejected-note">
+                    Rejected by finance
+                  </span>
 
                   <button
                     class="delete"
@@ -195,7 +207,7 @@
 
     <!-- VIEW MODAL -->
     <transition name="modal-fade">
-      <div v-if="showViewModal" class="modal-overlay">
+      <div v-if="showViewModal" class="modal-overlay" @click.self="showViewModal=false">
         <div class="modal view-modal">
         <div class="view-header">
           <div>
@@ -221,8 +233,8 @@
             </div>
             <div>
               <h4>Status</h4>
-              <p class="status-pill" :class="viewJobData.status === 'open' ? 'open' : 'closed'">
-                {{ viewJobData.status || "open" }}
+              <p class="status-pill" :class="statusClass(viewJobData.status)">
+                {{ displayStatus(viewJobData.status) }}
               </p>
             </div>
           </div>
@@ -277,7 +289,8 @@
 <script>
 import { auth, db } from "@/lib/client-platform"
 import api from "@/services/api"
-import { toast } from "vue3-toastify"
+import Toastify from "toastify-js"
+import "toastify-js/src/toastify.css"
 import { onAuthStateChanged } from "@/lib/session-auth"
 import {
   collection,
@@ -291,6 +304,25 @@ import {
   writeBatch,
   serverTimestamp
 } from "@/lib/laravel-data"
+
+const toast = {
+  success(text) { showToast(text, "#166534") },
+  error(text) { showToast(text, "#991b1b") },
+  warning(text) { showToast(text, "#92400e") },
+  info(text) { showToast(text, "#1d4ed8") }
+}
+
+function showToast(text, background) {
+  Toastify({
+    text,
+    gravity: "top",
+    position: "right",
+    duration: 3000,
+    close: true,
+    stopOnFocus: true,
+    style: { background }
+  }).showToast()
+}
 
 export default {
   name: "JobListings",
@@ -425,13 +457,53 @@ export default {
       return 0
     },
 
+    normalizeStatus(status) {
+      return String(status || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+    },
+
+    statusClass(status) {
+      return this.normalizeStatus(status).replace(/_/g, "-") || "pending"
+    },
+
+    displayStatus(status) {
+      const value = this.normalizeStatus(status) || "pending"
+      return value
+        .split("_")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ")
+    },
+
+    isOpen(status) {
+      return this.normalizeStatus(status) === "open"
+    },
+
+    isClosed(status) {
+      return this.normalizeStatus(status) === "closed"
+    },
+
+    isPending(status) {
+      return this.normalizeStatus(status) === "pending"
+    },
+
+    isOnHold(status) {
+      return this.normalizeStatus(status) === "on_hold"
+    },
+
+    isRejected(status) {
+      return this.normalizeStatus(status) === "rejected"
+    },
+
     async resolveActorMeta() {
       const user = await this.waitForAuthUser()
-      if (!user?.uid) return null
+      const uid = String(user?.uid || localStorage.getItem("uid") || localStorage.getItem("userUid") || "").trim()
+      if (!uid) return null
 
       let profile = {}
       try {
-        const snap = await getDoc(doc(db, "users", user.uid))
+        const snap = await getDoc(doc(db, "users", uid))
         if (snap.exists()) {
           profile = snap.data() || {}
         }
@@ -440,7 +512,7 @@ export default {
       }
 
       const email = String(
-        profile.email || user.email || localStorage.getItem("userEmail") || ""
+        profile.email || user?.email || localStorage.getItem("userEmail") || ""
       ).trim()
       const name = String(
         profile.username ||
@@ -452,9 +524,8 @@ export default {
       const companyId = String(profile.companyId || localStorage.getItem("companyId") || "").trim()
       const companyName = String(profile.companyName || localStorage.getItem("companyName") || "").trim()
 
-      if (!email) return null
       return {
-        uid: user.uid,
+        uid,
         email,
         name,
         role,
@@ -904,6 +975,21 @@ export default {
   color:#991b1b;
 }
 
+.pending{
+  background:#fef3c7;
+  color:#92400e;
+}
+
+.on-hold{
+  background:#dbeafe;
+  color:#1e3a8a;
+}
+
+.rejected{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
 /* BODY */
 .job-body h3{
   margin:8px 0 6px;
@@ -965,6 +1051,28 @@ export default {
   cursor:not-allowed;
   transform:none;
   box-shadow:none;
+}
+
+.action-note{
+  font-size:12px;
+  font-weight:600;
+  padding:8px 12px;
+  border-radius:12px;
+}
+
+.pending-note{
+  background:#fffbeb;
+  color:#92400e;
+}
+
+.hold-note{
+  background:#eff6ff;
+  color:#1e40af;
+}
+
+.rejected-note{
+  background:#fef2f2;
+  color:#991b1b;
 }
 
 .view{ background:linear-gradient(135deg, #0ea5e9, #0284c7); }

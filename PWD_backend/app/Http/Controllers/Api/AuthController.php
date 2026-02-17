@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class AuthController extends Controller
 {
@@ -217,7 +218,18 @@ class AuthController extends Controller
             $role = strtolower((string) ($pending->role ?? ''));
         }
 
-        $this->issueOtpForEmail($email, $role ?: 'applicant');
+        try {
+            $this->issueOtpForEmail($email, $role ?: 'applicant');
+        } catch (\Throwable $e) {
+            Log::warning('Send OTP endpoint failed', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'OTP email could not be sent. Please check mail settings and try again.',
+            ], 502);
+        }
 
         return response()->json(['message' => 'OTP sent']);
     }
@@ -430,6 +442,9 @@ class AuthController extends Controller
             'updated_at' => now(),
         ]);
 
-        $this->mailer->sendOtpEmail($email, $otp, $recipientLabel);
+        $sent = $this->mailer->sendOtpEmail($email, $otp, $recipientLabel);
+        if (!$sent) {
+            throw new RuntimeException('Failed to send OTP email.');
+        }
     }
 }
